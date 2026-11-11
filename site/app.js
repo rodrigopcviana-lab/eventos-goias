@@ -328,6 +328,16 @@
     desenha();
   });
 
+  function caixaSel(on) {
+    return on
+      ? '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4" fill="currentColor"/><path d="M7.5 12.5l3 3 6-7" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>'
+      : '<svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true"><rect x="3.75" y="3.75" width="16.5" height="16.5" rx="3.5" fill="#fff" stroke="currentColor" stroke-width="1.8"/></svg>';
+  }
+  function botaoSel(e, marc) {
+    return '<button type="button" class="bt-sel" data-marca="' + esc(e.id) + '" aria-pressed="' + marc + '" aria-label="' +
+      (marc ? "Tirar dos selecionados: " : "Selecionar: ") + esc(e.nome) + '" title="' + (marc ? "Tirar dos selecionados" : "Selecionar (aba Selecionados)") + '">' + caixaSel(marc) + "</button>";
+  }
+
   function notaHtml(e) {
     var n = st.notas[e.id];
     if (!n) return "";
@@ -340,9 +350,9 @@
 
   function desenhaTabela() {
     if (st.visao === "lista" || ehCelular()) { $("tabela-caixa").innerHTML = ""; return; }
-    var h = ['<table class="grade"><thead><tr class="letras"><th class="num"></th>'];
+    var h = ['<table class="grade"><thead><tr class="letras"><th class="num"></th><th class="sel"></th>'];
     COLS.forEach(function (c, i) { h.push("<th>" + LETRAS[i] + "</th>"); });
-    h.push('</tr><tr class="nomes"><th class="num">1</th>');
+    h.push('</tr><tr class="nomes"><th class="num">1</th><th class="sel" scope="col" title="Selecionar eventos (aba Selecionados)">Sel.</th>');
     COLS.forEach(function (c) {
       var ativo = (st.filtros[c.k] && st.filtros[c.k].size) || st.ordem.k === c.k && c.k !== "data";
       var ic = st.filtros[c.k] && st.filtros[c.k].size ? ICONE_FUNIL : st.ordem.k === c.k && c.k !== "data" ? ICONE_ORDEM : ICONE_SETA;
@@ -357,14 +367,15 @@
       if (porData && mes !== mesAnt) {
         var nMes = 0;
         visiveis.forEach(function (x) { if (grupo(x) === mes) nMes++; });
-        h.push('<tr class="mes"><th class="num">' + (n++) + '</th><td colspan="' + COLS.length + '">' + rotuloGrupo(e) +
+        h.push('<tr class="mes"><th class="num">' + (n++) + '</th><td colspan="' + (COLS.length + 1) + '">' + rotuloGrupo(e) +
           " · " + nMes + " evento" + (nMes === 1 ? "" : "s") + "</td></tr>");
         mesAnt = mes;
       }
       var marc = st.marcados.has(e.id);
       var cls = marc ? "marcado" : e._novo ? "novo" : e._saiu ? "saiu" : "";
       h.push('<tr class="' + cls + '"><th class="num"><button type="button" data-marca="' + esc(e.id) + '" aria-pressed="' + marc +
-        '" title="Selecionar (aba Selecionados)">' + (n++) + "</button></th>" +
+        '" title="Selecionar (aba Selecionados)" tabindex="-1">' + (n++) + "</button></th>" +
+        '<td class="sel">' + botaoSel(e, marc) + "</td>" +
         '<td class="nw">' + br(e._d) + '</td><td class="nw">' + br(e._ate) + "</td><td>" + e._dia + "</td><td>" + e._hora + "</td>" +
         '<td class="evento"><button type="button" data-abre="' + esc(e.id) + '">' + esc(e.nome) + "</button>" +
         (e._novo ? '<span class="tag novo">novo</span>' : "") + (e._saiu ? '<span class="tag saiu">saiu do site</span>' : "") + notaHtml(e) + "</td>" +
@@ -385,13 +396,13 @@
       var cls = marc ? "marcado" : e._novo ? "novo" : e._saiu ? "saiu" : "";
       var onde = [e.local, e.bairro, e.cidade].filter(Boolean).join(" · ") || e.cidade;
       var andamento = e._d < hoje ? "desde" : "";
-      h.push('<button type="button" class="item ' + cls + '" data-abre="' + esc(e.id) + '">' +
+      h.push('<div class="item ' + cls + '"><button type="button" class="item-abre" data-abre="' + esc(e.id) + '">' +
         '<span class="data"><span class="dia">' + (andamento || e._dia) + '</span><span class="n">' + e._d.slice(8, 10) + "/" + e._d.slice(5, 7) +
         '</span><span class="h">' + (e._hora || "&nbsp;") + "</span></span>" +
         '<span class="info"><span class="nome">' + esc(e.nome) + '</span><span class="onde">' + esc(onde) + "</span>" +
         '<span class="tags"><span>' + esc(e.ticketeira) + "</span>" + (e.categoria ? "<span>" + esc(e.categoria) + "</span>" : "") +
         (e._novo ? '<span class="t-novo">novo</span>' : "") + (e._saiu ? "<span>saiu do site</span>" : "") +
-        (marc ? '<span class="t-marc">selecionado</span>' : "") + "</span>" + notaHtml(e) + "</span></button>");
+        (marc ? '<span class="t-marc">selecionado</span>' : "") + "</span>" + notaHtml(e) + "</span></button>" + botaoSel(e, marc) + "</div>");
     });
     $("lista").innerHTML = h.join("");
   }
@@ -569,9 +580,13 @@
     history.replaceState(null, "", "#e=" + encodeURIComponent(e.id));
   }
   function atualizaMarcar() {
-    var b = $("ev-marcar"), m = aberto && st.marcados.has(aberto.id);
-    b.setAttribute("aria-pressed", !!m);
+    var b = $("ev-marcar"), m = !!(aberto && st.marcados.has(aberto.id));
+    b.setAttribute("aria-pressed", m);
     b.querySelector("span").textContent = m ? "Selecionado" : "Selecionar";
+    var topo = document.querySelector(".bt-sel-topo");
+    topo.setAttribute("aria-pressed", m);
+    topo.querySelector(".caixa").innerHTML = caixaSel(m);
+    topo.querySelector(".txt").textContent = m ? "Selecionado" : "Selecionar";
   }
   var tNota;
   function salvaNota() {
@@ -796,7 +811,7 @@
     // " agora" some no celular (CSS) para caber no topo.
     var f = falta();
     t.innerHTML = coleta.rodando ? '<span class="agora">Coletando </span>' + (f > 0 ? relogio(f) : "quase…") :
-      travado && liberaHora() ? "Liberado às " + liberaHora() : 'Atualizar<span class="agora"> agora</span>';
+      travado && liberaHora() ? '<span class="agora">Liberado às </span>' + liberaHora() : 'Atualizar<span class="agora"> agora</span>';
     b.setAttribute("aria-label", coleta.rodando ? "Coletando, " + textoRodando() : travado ? "Atualizar: próxima liberada às " + liberaHora() : "Atualizar agora");
     b.title = coleta.rodando ? cap(textoRodando()) :
       coleta.ligado === false ? "Atualização na hora indisponível no momento" :
@@ -909,6 +924,38 @@
     if (coleta.ligado && !coleta.pode && coleta.libera && Date.now() >= Date.parse(coleta.libera)) { consulta(); return; }
     if (dados) desenhaBotao();
   }, 1000);
+
+  /* ---------- cópia de segurança das anotações e seleções ---------- */
+  $("bt-copia-salvar").addEventListener("click", function () {
+    var n = Object.keys(st.notas).length, s = st.marcados.size;
+    if (!n && !s) { aviso("Ainda não há anotações nem eventos selecionados"); return; }
+    var copia = { tipo: "eventos-goias-anotacoes", versao: 1, salvo_em: emGoias(new Date().toISOString()),
+      notas: st.notas, selecionados: Array.from(st.marcados) };
+    baixa(JSON.stringify(copia, null, 1), "eventos-goias_minhas-anotacoes_" + hoje + ".json", "application/json");
+    aviso("Cópia salva: " + n + " anotaç" + (n === 1 ? "ão" : "ões") + " e " + s + " selecionado" + (s === 1 ? "" : "s"));
+  });
+  $("bt-copia-abrir").addEventListener("click", function () { $("copia-arquivo").value = ""; $("copia-arquivo").click(); });
+  $("copia-arquivo").addEventListener("change", function () {
+    var f = this.files && this.files[0];
+    if (!f) return;
+    f.text().then(function (txt) {
+      var c = JSON.parse(txt);
+      if (!c || c.tipo !== "eventos-goias-anotacoes") throw new Error("tipo");
+      var novasN = 0, novasS = 0;
+      // Junta com o que já existe: nada daqui é apagado.
+      Object.keys(c.notas || {}).forEach(function (id) {
+        var v = String(c.notas[id] || "").trim(), atual = st.notas[id] || "";
+        if (!v || atual === v || atual.indexOf(v) >= 0) return;
+        st.notas[id] = atual ? atual + "\n" + v : v; novasN++;
+      });
+      (c.selecionados || []).forEach(function (id) { if (!st.marcados.has(id)) { st.marcados.add(id); novasS++; } });
+      gravaLocal("eg-notas", JSON.stringify(st.notas));
+      gravaLocal("eg-marcados", JSON.stringify(Array.from(st.marcados)));
+      $("dlg-exportar").close();
+      desenha();
+      aviso("Cópia restaurada: " + novasN + " anotaç" + (novasN === 1 ? "ão" : "ões") + " e " + novasS + " selecionado" + (novasS === 1 ? "" : "s") + " a mais");
+    }).catch(function () { aviso("Esse arquivo não é uma cópia de anotações do Eventos Goiás"); });
+  });
 
   /* ---------- endereço (link compartilhável dos filtros) ---------- */
   function escreveHash() {

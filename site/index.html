@@ -7,6 +7,12 @@
 <meta name="description" content="Eventos que acontecem em Goiás, reunidos das ticketeiras e atualizados todo dia.">
 <meta name="theme-color" content="#185C37">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Crect width='24' height='24' rx='5' fill='%23185C37'/%3E%3Cpath d='M6 8h12M6 12h12M6 16h8' stroke='white' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icone-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Eventos GO">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -54,6 +60,7 @@
     <p><strong>Na hora, pelo botão Atualizar agora:</strong> pede uma coleta nova. Leva uns 8 minutos; a página mostra o andamento e se atualiza sozinha no fim.</p>
     <p><strong>Limite de 30 minutos:</strong> o botão vale para todos que usam o site, então depois de cada coleta (pelo botão ou automática) a próxima só é liberada 30 minutos depois. <span id="como-libera"></span></p>
     <p><strong>Data e hora mostradas</strong> no topo são as da última coleta. Cada evento também mostra quando foi conferido na ticketeira, e os arquivos exportados trazem essa informação.</p>
+    <p><strong>Anotações e seleções</strong> ficam guardadas no seu aparelho e voltam quando você abre o site de novo; ninguém mais vê. Somem se você limpar os dados do navegador ou usar aba anônima. No iPhone, adicione o site à Tela de Início (Compartilhar &gt; Adicionar à Tela de Início) para o Safari não apagá-las depois de dias sem uso. Para levar a outro aparelho: Exportar &gt; Salvar cópia.</p>
     <p>Ficam de fora os sites que bloqueiam acesso automático: Shotgun, Ingresse, BaladApp, Q2 Ingressos, Meu Bilhete e Ticketou.</p>
   </div>
 </details>
@@ -118,6 +125,15 @@
           <label><input type="radio" name="fmt" value="ics"><span><strong>Agenda</strong><small>.ics</small></span></label>
         </div>
       </fieldset>
+      <fieldset>
+        <legend>Minhas anotações e seleções</legend>
+        <p class="nota" style="margin-top:0">Ficam guardadas neste aparelho. Salve uma cópia para levar a outro aparelho ou navegador, ou para não perder se limpar os dados do navegador.</p>
+        <div class="copia">
+          <button type="button" class="bt-contorno-escuro" id="bt-copia-salvar">Salvar cópia</button>
+          <button type="button" class="bt-contorno-escuro" id="bt-copia-abrir">Restaurar cópia</button>
+          <input type="file" id="copia-arquivo" accept=".json,application/json" hidden>
+        </div>
+      </fieldset>
       <p class="nota">A planilha completa de hoje, com as abas e o resumo, também está em <a href="eventos_goias.xlsx" download>eventos_goias.xlsx</a>.</p>
     </div>
     <div class="folha-rodape">
@@ -128,7 +144,9 @@
 
 <dialog id="dlg-evento" class="folha" aria-labelledby="ev-nome">
   <form method="dialog" class="folha-corpo">
-    <div class="folha-topo"><span id="ev-linha" class="sub-escuro"></span><button class="bt-x" value="fechar" aria-label="Fechar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+    <div class="folha-topo"><span id="ev-linha" class="sub-escuro"></span>
+      <button type="button" class="bt-sel-topo" data-ev="marcar" aria-pressed="false"><span class="caixa"></span><span class="txt">Selecionar</span></button>
+      <button class="bt-x" value="fechar" aria-label="Fechar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
     <div class="folha-rolagem">
       <div class="ev-cabeca" id="ev-cabeca"></div>
       <dl class="ev-campos" id="ev-campos"></dl>

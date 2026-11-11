@@ -73,6 +73,8 @@ a { color: var(--verde); }
 .ev-nota small { font-weight: 400; color: var(--texto-3); font-size: 12px; }
 .confirma { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 10px; line-height: 1.45; color: var(--texto-2); }
 .t-nota { color: #6B4E00; }
+.copia { display: flex; gap: 8px; flex-wrap: wrap; }
+.copia button { flex: 1 1 140px; min-height: 44px; }
 
 /* ---------- como funciona (sempre começa recolhido) ---------- */
 .como { background: var(--verde-claro); border-bottom: 1px solid var(--grade); font-size: 13px; }
@@ -171,7 +173,20 @@ th.ativo .cab button { border-color: var(--verde-medio); color: var(--verde); }
 /* ---------- lista (celular) ---------- */
 .lista { display: none; flex-direction: column; }
 .lista .mes { position: sticky; top: var(--barra); z-index: 1; background: var(--verde-claro); color: var(--verde); font-weight: 700; font-size: 13px; padding: 6px 16px; border-bottom: 1px solid var(--grade); }
-.item { display: flex; gap: 12px; padding: 10px 16px; border: 0; border-bottom: 1px solid #E0E0E0; background: #fff; text-align: left; width: 100%; cursor: pointer; }
+.item { display: flex; align-items: stretch; border-bottom: 1px solid #E0E0E0; background: #fff; width: 100%; }
+.item-abre { flex: 1; min-width: 0; display: flex; gap: 12px; padding: 10px 4px 10px 16px; border: 0; background: transparent; text-align: left; cursor: pointer; color: inherit; }
+.item .bt-sel { flex: none; width: 52px; display: flex; align-items: center; justify-content: center; }
+
+/* botão Selecionar (caixinha) na tabela, nos cards e no evento aberto */
+.bt-sel { border: 0; background: transparent; cursor: pointer; padding: 0; color: var(--texto-3); }
+.bt-sel svg, .bt-sel-topo svg { display: block; }
+.bt-sel[aria-pressed="true"] { color: var(--verde); }
+.bt-sel:hover { color: var(--verde); }
+.grade .sel { width: 40px; min-width: 40px; text-align: center; padding: 0; }
+.grade tbody .sel .bt-sel { width: 100%; min-height: 30px; display: flex; align-items: center; justify-content: center; }
+.grade thead .sel { font-size: 11px; font-weight: 600; color: var(--texto-3); }
+.bt-sel-topo { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid var(--borda); border-radius: 20px; background: #fff; font-weight: 600; font-size: 13px; cursor: pointer; color: var(--texto); }
+.bt-sel-topo[aria-pressed="true"] { background: var(--marcado); border-color: #D9B640; }
 .item.novo { background: var(--novo); }
 .item.marcado { background: var(--marcado); }
 .item.saiu { color: var(--texto-3); }

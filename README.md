@@ -27,11 +27,16 @@ manda um e-mail para o dono do repositório.
 
 ## O site
 
-- **Selecionados e anotações**: no detalhe do evento dá para escrever uma
-  anotação e tocar em Selecionar (no computador, também clicando no número da
-  linha). Os selecionados ficam na aba Selecionados. Os dois ficam só no
-  aparelho e navegador de quem usa (localStorage) e vão junto nos arquivos
-  exportados (coluna "Anotação").
+- **Selecionados e anotações**: caixinha de selecionar em cada linha da
+  tabela, em cada card da lista e no topo do evento aberto; anotação no
+  detalhe do evento. Os selecionados ficam na aba Selecionados. Os dois ficam
+  no aparelho e navegador de quem usa (localStorage, com pedido de
+  armazenamento persistente) e vão junto nos arquivos exportados (coluna
+  "Anotação"). Exportar > "Salvar cópia" / "Restaurar cópia" leva para outro
+  aparelho (arquivo .json; restaurar junta, não apaga nada).
+- **Tela de Início**: `manifest.webmanifest` e `icone-*.png` deixam instalar o
+  site como app. No iPhone isso evita o Safari apagar os dados após 7 dias sem
+  uso (o app da Tela de Início tem dados separados do Safari: use a cópia).
 - **Botão Atualizar**: pede confirmação (tempo, consumo, trava de 30 min) e
   mostra uma contagem regressiva baseada na duração da última coleta. O
   "puxar para atualizar" do celular está desligado (`overscroll-behavior`);

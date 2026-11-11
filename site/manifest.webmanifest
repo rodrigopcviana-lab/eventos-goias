@@ -1,0 +1,16 @@
+{
+  "name": "Eventos Goiás",
+  "short_name": "Eventos GO",
+  "description": "Eventos que acontecem em Goiás, reunidos das ticketeiras e atualizados 3 vezes por dia.",
+  "lang": "pt-BR",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#FFFFFF",
+  "theme_color": "#185C37",
+  "icons": [
+    { "src": "icone-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icone-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icone-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}
