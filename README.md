@@ -29,7 +29,9 @@ manda um e-mail para o dono do repositório.
 
 - **Selecionados e anotações**: caixinha de selecionar em cada linha da
   tabela, em cada card da lista e no topo do evento aberto; anotação no
-  detalhe do evento. Os selecionados ficam na aba Selecionados. Os dois ficam
+  detalhe do evento. Os selecionados ficam na aba Seleção em calendário, que
+  abre sempre num calendário mensal (setas trocam o mês; embaixo, a lista do
+  mês) e, só nela, tem ícones para trocar para tabela. Os dois ficam
   no aparelho e navegador de quem usa (localStorage, com pedido de
   armazenamento persistente) e vão junto nos arquivos exportados (coluna
   "Anotação"). Exportar > "Salvar cópia" / "Restaurar cópia" leva para outro

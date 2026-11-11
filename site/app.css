@@ -76,6 +76,35 @@ a { color: var(--verde); }
 .copia { display: flex; gap: 8px; flex-wrap: wrap; }
 .copia button { flex: 1 1 140px; min-height: 44px; }
 
+/* ---------- aba Seleção em calendário ---------- */
+.modos { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; padding: 10px 24px; border-bottom: 1px solid var(--grade); background: #fff; }
+.modos-bts { display: inline-flex; border: 1px solid var(--borda); border-radius: 8px; overflow: hidden; }
+.modos-bts button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; border: 0; background: #fff; cursor: pointer; font-size: 13px; color: var(--texto-2); }
+.modos-bts button + button { border-left: 1px solid var(--borda); }
+.modos-bts button[aria-pressed="true"] { background: var(--verde); color: #fff; font-weight: 600; }
+.cal-nav { display: flex; align-items: center; gap: 6px; }
+.cal-nav strong { min-width: 150px; text-align: center; font-size: 15px; }
+.cal-nav button { min-width: 38px; min-height: 38px; border: 1px solid var(--borda); border-radius: 8px; background: #fff; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.cal-nav .cal-hoje { padding: 0 12px; font-size: 13px; }
+.calendario { padding: 12px 24px 24px; }
+.cal-grade { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-top: 1px solid var(--grade); border-left: 1px solid var(--grade); }
+.cal-sem { padding: 6px 8px; font-size: 11px; font-weight: 600; color: var(--texto-3); text-transform: uppercase; background: var(--cinza); border-right: 1px solid var(--grade); border-bottom: 1px solid var(--grade); }
+.cal-dia { min-height: 104px; padding: 4px; border-right: 1px solid var(--grade); border-bottom: 1px solid var(--grade); display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cal-dia.fora { background: #FAFAFA; }
+.cal-dia.fora .cal-n { color: #B0B0B0; }
+.cal-n { font-size: 12px; font-weight: 600; color: var(--texto-2); padding: 2px 4px; align-self: flex-start; border-radius: 10px; }
+.cal-dia.hoje .cal-n { background: var(--verde); color: #fff; }
+.cal-ev { display: block; width: 100%; text-align: left; border: 0; border-left: 3px solid var(--verde-medio); background: var(--verde-claro); border-radius: 4px; padding: 3px 5px; font-size: 12px; line-height: 1.25; cursor: pointer; color: var(--texto); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cal-ev:hover { background: #D6EBDD; }
+.cal-ev b { font-weight: 600; margin-right: 4px; }
+.cal-ev.continua { border-left-style: dashed; opacity: .85; }
+.cal-ev.com-nota { border-left-color: #D9B640; }
+.cal-mais { font-size: 11px; color: var(--texto-3); padding: 0 4px; }
+.cal-agenda { margin-top: 18px; border: 1px solid var(--grade); border-radius: 8px; overflow: hidden; }
+.cal-agenda h3 { margin: 0; padding: 10px 16px; font-size: 14px; background: var(--cinza); border-bottom: 1px solid var(--grade); }
+.cal-agenda .item:last-child { border-bottom: 0; }
+.cal-vazio-mes { padding: 16px; color: var(--texto-3); font-size: 13px; }
+
 /* ---------- como funciona (sempre começa recolhido) ---------- */
 .como { background: var(--verde-claro); border-bottom: 1px solid var(--grade); font-size: 13px; }
 .como summary { display: flex; align-items: center; gap: 8px; padding: 8px 24px; cursor: pointer; list-style: none; color: var(--verde); font-weight: 600; min-height: 40px; }
@@ -299,8 +328,21 @@ legend, .rotulo { font-size: 12px; font-weight: 600; color: var(--texto-3); text
   .como summary small { flex-basis: 100%; order: 3; margin: 0 0 0 24px; }
   .como-corpo { padding: 0 16px 12px; }
   .fontes { padding: 8px 16px; }
+  .modos { padding: 8px 16px; justify-content: space-between; }
+  .modos-bts button span { display: none; }
+  .modos-bts button { padding: 0 12px; }
+  .cal-nav strong { min-width: 0; font-size: 14px; }
+  .cal-nav .cal-hoje { display: none; }
+  .calendario { padding: 8px 0 16px; }
+  .cal-grade { border-left: 0; }
+  .cal-sem { padding: 4px 2px; text-align: center; font-size: 10px; }
+  .cal-dia { min-height: 64px; padding: 2px; gap: 2px; }
+  .cal-n { font-size: 11px; padding: 1px 4px; align-self: center; }
+  .cal-ev { font-size: 9.5px; padding: 1px 2px; border-left-width: 2px; }
+  .cal-ev b { display: none; }
+  .cal-agenda { margin: 14px 0 0; border-radius: 0; border-left: 0; border-right: 0; }
+  .abas button[data-aba="selecionados"] { font-size: 12px; line-height: 1.2; }
   .ev-nota textarea { font-size: 16px; }
-  .abas button .so-estreito { display: inline !important; }
   .fontes button { min-height: 38px; }
   #bt-exportar { width: 44px; height: 44px; padding: 0; justify-content: center; background: transparent; color: #fff; border: 1px solid #8DBFA0; }
   .busca-celular { width: 100%; gap: 8px; }

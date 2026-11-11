@@ -38,7 +38,9 @@
     aba: "proximos", periodo: "todos", de: "", ate: "", busca: "", soNovos: false,
     filtros: {}, ordem: { k: "data", dir: 1 }, visao: lerLocal("eg-visao") || "tabela",
     marcados: new Set(JSON.parse(lerLocal("eg-marcados") || "[]")),
-    notas: JSON.parse(lerLocal("eg-notas") || "{}") // anotações por evento, só neste aparelho
+    notas: JSON.parse(lerLocal("eg-notas") || "{}"), // anotações por evento, só neste aparelho
+    // Aba Seleção em calendário: modo (calendario | tabela) e mês mostrado (AAAA-MM).
+    modoSel: "calendario", calMes: "" // sempre abre no calendário
   };
   var visiveis = [];
   var $ = function (id) { return document.getElementById(id); };
@@ -240,9 +242,14 @@
     $("so-novos").checked = st.soNovos;
 
     var resumo = st.aba === "resumo";
+    var cal = st.aba === "selecionados" && st.modoSel === "calendario";
     $("resumo").hidden = !resumo;
-    $("tabela-caixa").hidden = resumo;
-    $("lista").hidden = resumo;
+    $("tabela-caixa").hidden = resumo || cal;
+    $("lista").hidden = resumo || cal;
+    $("calendario").hidden = !cal;
+    $("modos").hidden = st.aba !== "selecionados";
+    $("cal-nav").hidden = !cal;
+    document.querySelectorAll("[data-modo]").forEach(function (b) { b.setAttribute("aria-pressed", b.dataset.modo === st.modoSel); });
     if (resumo) { desenhaResumo(); $("vazio").hidden = true; $("resumo-filtro").textContent = "Resumo da última rodada"; escreveHash(); return; }
 
     if (st.aba === "historico" && st.ordem.k === "data" && !desenha._ordemManual) st.ordem.dir = -1;
@@ -250,8 +257,9 @@
     var base = baseDaAba(st.aba);
     visiveis = ordena(filtra(base));
     $("vazio").hidden = visiveis.length > 0;
+    if (cal) $("vazio").hidden = true;
     $("vazio").innerHTML = st.aba === "selecionados" && !base.length
-      ? "Nenhum evento selecionado ainda. Abra um evento e toque em <strong>Selecionar</strong>" + (ehCelular() ? "." : ", ou clique no número da linha.")
+      ? "Nenhum evento selecionado ainda. Marque a caixinha ao lado de um evento, ou abra o evento e toque em <strong>Selecionar</strong>."
       : 'Nenhum evento com esses filtros. <button type="button" class="link" data-acao="limpar">Limpar filtros</button>';
     var partes = [];
     if (st.periodo !== "todos") partes.push(PERIODOS.filter(function (p) { return p[0] === st.periodo; })[0][1]);
@@ -265,10 +273,71 @@
       (partes.length ? " · filtro: " + esc(partes.join(" · ")) : "") + " · ordem: " + esc(nomeCol(st.ordem.k).toLowerCase()) +
       (st.ordem.dir < 0 ? " (decrescente)" : "");
     $("bt-ver").textContent = "Ver " + visiveis.length + " evento" + (visiveis.length === 1 ? "" : "s");
-    desenhaTabela();
-    desenhaLista();
+    if (cal) { $("tabela-caixa").innerHTML = ""; $("lista").innerHTML = ""; desenhaCalendario(); }
+    else { $("calendario").innerHTML = ""; desenhaTabela(); desenhaLista(); }
     escreveHash();
   }
+
+  /* ---------- calendário mensal (aba Seleção em calendário) ---------- */
+  var SEMANA = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
+  function mesInicial() {
+    // Mês de hoje, ou o do próximo evento selecionado se este mês não tiver nenhum.
+    var atual = hoje.slice(0, 7);
+    if (visiveis.some(function (e) { return e._d.slice(0, 7) <= atual && (e._termina || e._d).slice(0, 7) >= atual; })) return atual;
+    var prox = visiveis.filter(function (e) { return e._d.slice(0, 7) > atual; }).map(function (e) { return e._d.slice(0, 7); }).sort()[0];
+    return prox || atual;
+  }
+  function somaMes(m, n) {
+    var y = +m.slice(0, 4), mm = +m.slice(5, 7) - 1 + n;
+    y += Math.floor(mm / 12); mm = ((mm % 12) + 12) % 12;
+    return y + "-" + (mm < 9 ? "0" : "") + (mm + 1);
+  }
+  function desenhaCalendario() {
+    if (!st.calMes) st.calMes = mesInicial();
+    var m = st.calMes, ini = m + "-01", fimMes = somaDias(somaMes(m, 1) + "-01", -1);
+    $("cal-titulo").textContent = cap(nomeMes(ini));
+    var comeca = somaDias(ini, -diaSemana(ini)), termina = somaDias(fimMes, 6 - diaSemana(fimMes));
+    // Evento de vários dias aparece em cada dia (no máximo 62 dias, para exposições longas).
+    var porDia = {};
+    visiveis.forEach(function (e) {
+      if (!e._d) return;
+      var ate = e._ate && e._ate > e._d ? e._ate : e._d, d = e._d < comeca ? comeca : e._d, n = 0;
+      while (d <= ate && d <= termina && n++ < 62) { (porDia[d] = porDia[d] || []).push(e); d = somaDias(d, 1); }
+    });
+    var max = ehCelular() ? 2 : 3;
+    var h = ['<div class="cal-grade" role="grid" aria-label="' + esc(cap(nomeMes(ini))) + '">'];
+    SEMANA.forEach(function (s) { h.push('<div class="cal-sem" role="columnheader">' + s + "</div>"); });
+    for (var d = comeca; d <= termina; d = somaDias(d, 1)) {
+      var evs = (porDia[d] || []).sort(function (a, b) { return (a._hora || "99") < (b._hora || "99") ? -1 : 1; });
+      var cls = "cal-dia" + (d.slice(0, 7) !== m ? " fora" : "") + (d === hoje ? " hoje" : "");
+      h.push('<div class="' + cls + '" role="gridcell" aria-label="' + br(d) + ": " + evs.length + ' evento(s)"><span class="cal-n">' + (+d.slice(8, 10)) + "</span>");
+      evs.slice(0, max).forEach(function (e) {
+        var continua = e._d < d;
+        h.push('<button type="button" class="cal-ev' + (continua ? " continua" : "") + (st.notas[e.id] ? " com-nota" : "") + '" data-abre="' + esc(e.id) +
+          '" title="' + esc((e._hora ? e._hora + " " : "") + e.nome + (e.local ? " · " + e.local : "")) + '">' +
+          (e._hora && !continua ? "<b>" + e._hora + "</b>" : "") + esc(e.nome) + "</button>");
+      });
+      if (evs.length > max) h.push('<span class="cal-mais">+' + (evs.length - max) + " mais</span>");
+      h.push("</div>");
+    }
+    h.push("</div>");
+    // Lista do mês embaixo: no celular é onde se lê o nome inteiro.
+    var doMes = visiveis.filter(function (e) { return e._d.slice(0, 7) <= m && (e._termina || e._d).slice(0, 7) >= m; })
+      .sort(function (a, b) { return a.inicio < b.inicio ? -1 : 1; });
+    h.push('<section class="cal-agenda"><h3>' + doMes.length + " evento" + (doMes.length === 1 ? "" : "s") + " selecionado" + (doMes.length === 1 ? "" : "s") +
+      " em " + nomeMes(ini) + "</h3>" + (doMes.length ? doMes.map(itemHtml).join("") :
+      '<p class="cal-vazio-mes">Nenhum evento selecionado neste mês. Use as setas para ver outros meses.</p>') + "</section>");
+    $("calendario").innerHTML = h.join("");
+  }
+  $("modos").addEventListener("click", function (ev) {
+    var t = ev.target.closest("button");
+    if (!t) return;
+    if (t.dataset.modo) { st.modoSel = t.dataset.modo; desenha(); }
+    else if (t.dataset.mes !== undefined) {
+      st.calMes = t.dataset.mes === "0" ? hoje.slice(0, 7) : somaMes(st.calMes || hoje.slice(0, 7), +t.dataset.mes);
+      desenha();
+    }
+  });
 
   function nomeCol(k) { var c = COLS.filter(function (c) { return c.k === k; })[0]; return c ? c.nome : k; }
 
@@ -335,7 +404,7 @@
   }
   function botaoSel(e, marc) {
     return '<button type="button" class="bt-sel" data-marca="' + esc(e.id) + '" aria-pressed="' + marc + '" aria-label="' +
-      (marc ? "Tirar dos selecionados: " : "Selecionar: ") + esc(e.nome) + '" title="' + (marc ? "Tirar dos selecionados" : "Selecionar (aba Selecionados)") + '">' + caixaSel(marc) + "</button>";
+      (marc ? "Tirar dos selecionados: " : "Selecionar: ") + esc(e.nome) + '" title="' + (marc ? "Tirar dos selecionados" : "Selecionar (aba Seleção em calendário)") + '">' + caixaSel(marc) + "</button>";
   }
 
   function notaHtml(e) {
@@ -352,7 +421,7 @@
     if (st.visao === "lista" || ehCelular()) { $("tabela-caixa").innerHTML = ""; return; }
     var h = ['<table class="grade"><thead><tr class="letras"><th class="num"></th><th class="sel"></th>'];
     COLS.forEach(function (c, i) { h.push("<th>" + LETRAS[i] + "</th>"); });
-    h.push('</tr><tr class="nomes"><th class="num">1</th><th class="sel" scope="col" title="Selecionar eventos (aba Selecionados)">Sel.</th>');
+    h.push('</tr><tr class="nomes"><th class="num">1</th><th class="sel" scope="col" title="Selecionar eventos (aba Seleção em calendário)">Sel.</th>');
     COLS.forEach(function (c) {
       var ativo = (st.filtros[c.k] && st.filtros[c.k].size) || st.ordem.k === c.k && c.k !== "data";
       var ic = st.filtros[c.k] && st.filtros[c.k].size ? ICONE_FUNIL : st.ordem.k === c.k && c.k !== "data" ? ICONE_ORDEM : ICONE_SETA;
@@ -374,7 +443,7 @@
       var marc = st.marcados.has(e.id);
       var cls = marc ? "marcado" : e._novo ? "novo" : e._saiu ? "saiu" : "";
       h.push('<tr class="' + cls + '"><th class="num"><button type="button" data-marca="' + esc(e.id) + '" aria-pressed="' + marc +
-        '" title="Selecionar (aba Selecionados)" tabindex="-1">' + (n++) + "</button></th>" +
+        '" title="Selecionar (aba Seleção em calendário)" tabindex="-1">' + (n++) + "</button></th>" +
         '<td class="sel">' + botaoSel(e, marc) + "</td>" +
         '<td class="nw">' + br(e._d) + '</td><td class="nw">' + br(e._ate) + "</td><td>" + e._dia + "</td><td>" + e._hora + "</td>" +
         '<td class="evento"><button type="button" data-abre="' + esc(e.id) + '">' + esc(e.nome) + "</button>" +
@@ -392,10 +461,17 @@
     visiveis.forEach(function (e) {
       var mes = grupo(e);
       if (porData && mes !== mesAnt) { h.push('<div class="mes">' + rotuloGrupo(e) + "</div>"); mesAnt = mes; }
+      h.push(itemHtml(e));
+    });
+    $("lista").innerHTML = h.join("");
+  }
+
+  function itemHtml(e) {
+      var h = [];
       var marc = st.marcados.has(e.id);
       var cls = marc ? "marcado" : e._novo ? "novo" : e._saiu ? "saiu" : "";
       var onde = [e.local, e.bairro, e.cidade].filter(Boolean).join(" · ") || e.cidade;
-      var andamento = e._d < hoje ? "desde" : "";
+      var andamento = e._d < hoje && e._termina >= hoje ? "desde" : "";
       h.push('<div class="item ' + cls + '"><button type="button" class="item-abre" data-abre="' + esc(e.id) + '">' +
         '<span class="data"><span class="dia">' + (andamento || e._dia) + '</span><span class="n">' + e._d.slice(8, 10) + "/" + e._d.slice(5, 7) +
         '</span><span class="h">' + (e._hora || "&nbsp;") + "</span></span>" +
@@ -403,8 +479,7 @@
         '<span class="tags"><span>' + esc(e.ticketeira) + "</span>" + (e.categoria ? "<span>" + esc(e.categoria) + "</span>" : "") +
         (e._novo ? '<span class="t-novo">novo</span>' : "") + (e._saiu ? "<span>saiu do site</span>" : "") +
         (marc ? '<span class="t-marc">selecionado</span>' : "") + "</span>" + notaHtml(e) + "</span></button>" + botaoSel(e, marc) + "</div>");
-    });
-    $("lista").innerHTML = h.join("");
+      return h[0];
   }
 
   function desenhaResumo() {
@@ -623,7 +698,7 @@
     $("n-sel").textContent = st.marcados.size ? "(" + st.marcados.size + ")" : "";
     // Na aba Selecionados a lista muda; nas outras só a cor da linha.
     if (st.aba === "selecionados" && !$("dlg-evento").open) desenha(); else { desenhaTabela(); desenhaLista(); }
-    aviso(st.marcados.has(id) ? "Selecionado: está na aba Selecionados" : "Tirado dos selecionados");
+    aviso(st.marcados.has(id) ? "Selecionado: está na aba Seleção em calendário" : "Tirado da seleção");
   }
 
   /* ---------- exportar ---------- */
@@ -641,7 +716,7 @@
     $("ex-n-marcados").textContent = st.marcados.size;
     $("dlg-exportar").showModal();
   }
-  function nomeAba() { return { proximos: "Próximos", novos: "Novos hoje", selecionados: "Selecionados", historico: "Histórico", resumo: "Próximos" }[st.aba]; }
+  function nomeAba() { return { proximos: "Próximos", novos: "Novos hoje", selecionados: "Seleção em calendário", historico: "Histórico", resumo: "Próximos" }[st.aba]; }
 
   $("ex-mes").addEventListener("focus", function () { document.querySelector('input[name=oque][value=mes]').checked = true; });
   $("bt-baixar").addEventListener("click", function () {
@@ -962,6 +1037,7 @@
     if (aberto) return;
     var p = new URLSearchParams();
     if (st.aba !== "proximos") p.set("aba", st.aba);
+    if (st.aba === "selecionados" && st.modoSel === "calendario" && st.calMes) p.set("mes", st.calMes);
     if (st.periodo !== "todos") p.set("p", st.periodo);
     if (st.periodo === "datas") { if (st.de) p.set("de", st.de); if (st.ate) p.set("ate", st.ate); }
     if (st.busca) p.set("q", st.busca);
@@ -975,6 +1051,7 @@
     if (!h || h.indexOf("e=") === 0) return;
     var p = new URLSearchParams(h);
     if (p.get("aba")) st.aba = p.get("aba");
+    if (/^\d{4}-\d\d$/.test(p.get("mes") || "")) st.calMes = p.get("mes");
     if (p.get("p")) st.periodo = p.get("p");
     st.de = p.get("de") || ""; st.ate = p.get("ate") || "";
     st.busca = p.get("q") || ""; $("busca").value = st.busca; $("busca-cel").value = st.busca;
