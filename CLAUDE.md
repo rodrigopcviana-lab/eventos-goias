@@ -1,8 +1,9 @@
 # Eventos Goiás
 
-Robô que junta os eventos de Goiás das ticketeiras + site no GitHub Pages.
-Projeto pessoal do Rodrigo, à parte: não tem relação com o Grupo IZ nem com os
-outros repositórios dele. Detalhe em `README.md`.
+Robô que junta os eventos de Goiás das ticketeiras + site no GitHub Pages,
+servido no endereço neutro https://eventos-goias.pages.dev (Cloudflare Pages,
+`endereco/`). Botão Atualizar: Worker `eventos-goias-atualizar` (`worker/`).
+Projeto à parte, sem relação com nenhum outro repositório. Detalhe em `README.md`.
 
 ## Regras
 
@@ -17,3 +18,15 @@ outros repositórios dele. Detalhe em `README.md`.
 - Site sem build e sem emoji na interface; ícones são SVG de linha.
 - Testar fonte nova com `python robo_eventos.py --so <fonte>` e o site no
   navegador, no computador e no celular, antes de dar push.
+- Divulgar só o endereço `eventos-goias.pages.dev`: o site não pode mostrar
+  nome de pessoa nem da conta do GitHub.
+
+## Sessão local (Windows, PowerShell 5: use `;`, não `&&`)
+
+- `git pull` antes de tudo (o robô commita `dados/` e `saida/` todo dia).
+- Site no PC: `python servir.py` (porta 8000; também em `.claude/launch.json`).
+- Robô: `.venv\Scripts\python robo_eventos.py --rapido` (não commitar o
+  `dados/`/`saida/` de teste: `git checkout dados saida` depois).
+- Worker: `node --test worker/test/index.test.mjs`; deploy com
+  `npx wrangler deploy` dentro de `worker/`.
+- Push em `site/**` republica o site sem coletar.

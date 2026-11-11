@@ -1,7 +1,7 @@
 # Eventos Goiás
 
 Site com os eventos que acontecem em Goiás, reunidos das ticketeiras e
-atualizados sozinhos todo dia: **https://rodrigopcviana-lab.github.io/eventos-goias/**
+atualizados sozinhos todo dia: **https://eventos-goias.pages.dev**
 
 Projeto à parte, sem relação com nenhum outro repositório.
 
@@ -18,7 +18,8 @@ Todo dia às 07:40 (horário de Goiás) o GitHub Actions
    (`saida/eventos.json`) e faz commit disso no repositório;
 4. publica o site no GitHub Pages.
 
-Não precisa de nenhum computador ligado. Para rodar na hora: aba **Actions** >
+Não precisa de nenhum computador ligado. Para rodar na hora: botão
+**Atualizar** no topo do site (ver abaixo) ou aba **Actions** >
 **Atualiza eventos** > **Run workflow**. Se a rodada falhar, o site continua
 com os dados do dia anterior e avisa "atualização atrasada" no topo; o GitHub
 manda um e-mail para o dono do repositório.
@@ -40,6 +41,27 @@ manda um e-mail para o dono do repositório.
 - JavaScript puro, sem build: `site/index.html`, `site/app.js`,
   `site/app.css`. O Excel é montado no navegador pela SheetJS 0.18.5
   (Apache-2.0), servida de `site/vendor/`.
+
+## Endereço público e botão Atualizar
+
+- **Endereço**: `https://eventos-goias.pages.dev` é um projeto do Cloudflare
+  Pages (`endereco/`) que só repassa o site do GitHub Pages, sem mostrar o
+  endereço de origem. Não precisa ser republicado quando o site muda; só se
+  `endereco/public/_worker.js` mudar:
+  `npx wrangler pages deploy endereco/public --project-name eventos-goias --branch main`.
+- **Botão Atualizar**: o site chama `/api/estado` e `/api/atualizar`, que o
+  endereço público encaminha ao Worker `eventos-goias-atualizar` (`worker/`).
+  Ele guarda a permissão do GitHub (segredo `GITHUB_TOKEN`: token
+  fine-grained só deste repositório, Actions: Read and write) e dispara o
+  workflow no máximo uma vez a cada 30 minutos, nunca com outra coleta
+  rodando. Enquanto a coleta roda, o site mostra o andamento e recarrega os
+  eventos sozinho no fim. Sem o segredo, o botão some e o resto funciona.
+  - Testes: `node --test worker/test/index.test.mjs`
+  - Publicar: `cd worker` e `npx wrangler deploy`
+  - Trocar o token: `cd worker` e `npx wrangler secret put GITHUB_TOKEN`
+- **Data e hora da coleta**: no topo de todas as abas, no Resumo, no detalhe
+  de cada evento ("Conferido na ticketeira") e nos arquivos exportados
+  (coluna "Conferido em"; aba "Sobre" no Excel).
 
 ## Ticketeiras
 
@@ -65,10 +87,11 @@ evento (`CATEGORIAS_PELO_NOME` em `fontes/comum.py`).
 - `fontes/<site>.py`: uma função `coleta()` por ticketeira; devolve só eventos de GO.
 - Fonte nova: criar o arquivo, registrar em `FONTES` no `robo_eventos.py` e no `config.json`.
 - Testar uma fonte: `python robo_eventos.py --so sympla`. Teste curto: `--rapido`.
-- Ver o site localmente: rodar o robô, copiar `site/` + `saida/eventos.json`,
-  `saida/eventos_goias.xlsx` e `.csv` para uma pasta e servir com
-  `python -m http.server`.
-- Dependência única do robô: `openpyxl`.
+- Ver o site localmente: `python servir.py` (abre http://localhost:8000 com os
+  dados da última coleta, sem rodar o robô). O botão Atualizar ali dispara uma
+  coleta de verdade.
+- Dependência única do robô: `openpyxl`. No PC:
+  `python -m venv .venv` e `.venv\Scripts\python -m pip install -r requirements.txt`.
 
 ## Rodar num PC (opcional)
 

@@ -6,6 +6,9 @@
   "use strict";
 
   var SHEETJS = "vendor/xlsx.full.min.js"; // SheetJS 0.18.5 (Apache-2.0), servida pelo próprio site
+  // Intermediário do botão Atualizar (worker/ no repositório): guarda a permissão do GitHub.
+  // No endereço público é o mesmo site (/api); no PC (python servir.py) usa o endereço público.
+  var ATUALIZADOR = /^(localhost|127.0.0.1)$/.test(location.hostname) ? "https://eventos-goias.pages.dev/api" : "api";
   var DIAS = ["dom", "seg", "ter", "qua", "qui", "sex", "sáb"];
   var DIAS_LONGOS = ["domingo", "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira", "sexta-feira", "sábado"];
   var MESES = ["janeiro", "fevereiro", "março", "abril", "maio", "junho", "julho", "agosto", "setembro", "outubro", "novembro", "dezembro"];
@@ -57,6 +60,12 @@
   }
   function diaSemana(iso) { return new Date(iso + "T12:00:00Z").getUTCDay(); }
   function br(iso) { return iso ? iso.slice(8, 10) + "/" + iso.slice(5, 7) + "/" + iso.slice(0, 4) : ""; }
+  // "2026-11-11T15:31" (horário de Goiás) -> "11/11/2026 às 15:31"
+  function brHora(iso) { return iso ? br(iso.slice(0, 10)) + (iso.length >= 16 ? " às " + iso.slice(11, 16) : "") : ""; }
+  // Horário UTC -> "AAAA-MM-DDTHH:MM" em Goiás (UTC-3 o ano todo).
+  function emGoias(utc) { return utc ? new Date(Date.parse(utc) - 3 * 3600 * 1000).toISOString().slice(0, 16) : ""; }
+  // Momento da coleta que gerou os dados (fim da coleta; arquivos antigos só têm o início).
+  function horaColeta() { var c = (dados && dados.coleta) || {}; return c.fim || c.inicio || (dados && dados.atualizado) || ""; }
   function nomeMes(iso) { return MESES[+iso.slice(5, 7) - 1] + " de " + iso.slice(0, 4); }
   function cap(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function semAcento(s) { return (s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase(); }
@@ -83,32 +92,45 @@
     return e;
   }
 
-  function carrega() {
-    fetch("eventos.json", { cache: "no-cache" })
+  // recarga: depois de uma coleta pedida pelo botão; pula o cache do GitHub Pages.
+  function carrega(recarga) {
+    return fetch("eventos.json" + (recarga ? "?v=" + Date.now() : ""), { cache: "no-cache" })
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (d) {
         dados = d;
+        hoje = hojeEmGoias();
         todos = d.eventos.map(prepara);
+        porId = {};
         todos.forEach(function (e) { porId[e.id] = e; });
-        var at = d.atualizado || "";
-        var n = todos.filter(function (e) { return e._termina >= hoje; }).length;
-        var txt = "Atualizado " + (at.slice(0, 10) === hoje ? "hoje" : "em " + br(at.slice(0, 10))) + " às " + at.slice(11, 16) +
-          " · " + n + " eventos · " + Object.keys(d.fontes || {}).length + " ticketeiras";
-        $("atualizado").textContent = txt;
-        // Mais de 36 h sem atualizar: a rodada diária falhou.
-        if (Date.now() - new Date(at).getTime() > 36 * 3600 * 1000) {
-          $("atualizado").textContent += " · atualização atrasada";
-          $("atualizado").classList.add("alerta");
-        }
+        escreveColeta();
         var nNovos = todos.filter(function (e) { return e._novo && e._termina >= hoje; }).length;
         $("n-novos").textContent = "(" + nNovos + ")";
-        leHash();
+        if (!recarga) leHash();
         desenha();
-        abreDoHash();
+        if (!recarga) abreDoHash();
+        else if (aberto && porId[aberto.id]) abreEvento(aberto.id);
       })
       .catch(function () {
-        $("atualizado").textContent = "Não foi possível carregar os eventos. Tente recarregar a página.";
+        if (!recarga) $("atualizado").textContent = "Não foi possível carregar os eventos. Tente recarregar a página.";
+        throw new Error("eventos");
       });
+  }
+
+  // Linha do topo (visível em todas as abas): data e hora da coleta.
+  function escreveColeta() {
+    if (!dados) return;
+    var at = horaColeta(), sub = $("atualizado");
+    var n = todos.filter(function (e) { return e._termina >= hoje; }).length;
+    var quando = at.slice(0, 10) === hoje ? "hoje, " + br(at.slice(0, 10)) + ", às " + at.slice(11, 16) : "em " + brHora(at);
+    var txt = "Dados coletados " + quando + " · " + n + " eventos · " + Object.keys(dados.fontes || {}).length + " ticketeiras";
+    sub.classList.remove("alerta");
+    // Mais de 36 h sem atualizar: a rodada diária falhou.
+    if (Date.now() - new Date(at.slice(0, 16) + ":00-03:00").getTime() > 36 * 3600 * 1000) {
+      txt += " · atualização atrasada";
+      sub.classList.add("alerta");
+    }
+    if (coleta.rodando) txt += " · " + textoRodando();
+    sub.textContent = txt;
   }
 
   /* ---------- filtro ---------- */
@@ -324,7 +346,13 @@
 
   function desenhaResumo() {
     var fut = todos.filter(function (e) { return e._termina >= hoje; });
-    var h = '<section><h2>Ticketeiras na última rodada</h2><table><thead><tr><th>Ticketeira</th><th class="n">Eventos</th><th>Coleta</th></tr></thead><tbody>';
+    var c = dados.coleta || {};
+    var h = '<section><h2>Coleta</h2><table><tbody>' +
+      (c.inicio ? "<tr><td>Começou</td><td>" + esc(brHora(c.inicio)) + "</td></tr>" : "") +
+      "<tr><td>Terminou</td><td>" + esc(brHora(horaColeta())) + "</td></tr>" +
+      (c.paginas ? '<tr><td>Páginas lidas</td><td class="n">' + c.paginas + "</td></tr>" : "") +
+      '</tbody></table><p class="nota">A coleta roda sozinha todo dia às 07:40. O botão Atualizar, no topo, pede uma coleta na hora (no máximo uma a cada 30 minutos).</p></section>';
+    h += '<section><h2>Ticketeiras na última rodada</h2><table><thead><tr><th>Ticketeira</th><th class="n">Eventos</th><th>Coleta</th></tr></thead><tbody>';
     var fs = dados.fontes || {};
     Object.keys(fs).forEach(function (nome) {
       var f = fs[nome];
@@ -476,7 +504,8 @@
       "<h2 id=\"ev-nome\">" + esc(e.nome) + "</h2><p>" + esc(quando) + "</p>";
     var campos = [["Local", e.local], ["Endereço", e.endereco], ["Bairro", e.bairro], ["Cidade", e.cidade ? e.cidade + " - GO" : ""],
       ["Categoria", e.categoria], ["Organizador", e.organizador], ["Ticketeira", e.ticketeira], ["Situação", e.situacao],
-      ["Visto pela 1ª vez", br(e.visto)]];
+      ["Visto pela 1ª vez", br(e.visto)],
+      [e._saiu ? "Visto pela última vez" : "Conferido na ticketeira", brHora(e.conferido)]];
     $("ev-campos").innerHTML = campos.filter(function (c) { return c[1]; }).map(function (c) {
       return "<dt>" + c[0] + "</dt><dd>" + esc(c[1]) + "</dd>";
     }).join("");
@@ -561,9 +590,10 @@
     return "evento_" + semAcento(nome).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) + "." + ext;
   }
 
-  var CAB = ["Data", "Até", "Dia", "Hora", "Evento", "Local", "Endereço", "Bairro", "Cidade", "Categoria", "Organizador", "Ticketeira", "Link", "Situação", "Visto pela 1ª vez"];
+  var CAB = ["Data", "Até", "Dia", "Hora", "Evento", "Local", "Endereço", "Bairro", "Cidade", "Categoria", "Organizador", "Ticketeira", "Link", "Situação", "Visto pela 1ª vez", "Conferido em"];
   function linha(e) {
-    return [br(e._d), br(e._ate), e._dia, e._hora, e.nome, e.local, e.endereco, e.bairro, e.cidade, e.categoria, e.organizador, e.ticketeira, e.link, e.situacao, br(e.visto)];
+    return [br(e._d), br(e._ate), e._dia, e._hora, e.nome, e.local, e.endereco, e.bairro, e.cidade, e.categoria, e.organizador, e.ticketeira, e.link, e.situacao, br(e.visto),
+      brHora(e.conferido || horaColeta()).replace(" às ", " ")];
   }
   function csv(lista) {
     var q = function (v) { v = String(v == null ? "" : v); return /[;"\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
@@ -598,11 +628,19 @@
         if (ws[ref]) ws[ref].l = { Target: e.link };
         [0, 1, 14].forEach(function (c) { var rc = X.utils.encode_cell({ r: i + 1, c: c }); if (ws[rc]) ws[rc].z = "dd/mm/yyyy"; });
       });
-      ws["!cols"] = [11, 11, 6, 7, 48, 30, 30, 20, 20, 22, 26, 18, 10, 14, 14].map(function (w) { return { wch: w }; });
+      ws["!cols"] = [11, 11, 6, 7, 48, 30, 30, 20, 20, 22, 26, 18, 10, 14, 14, 17].map(function (w) { return { wch: w }; });
       ws["!autofilter"] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lista.length, c: CAB.length - 1 } }) };
       ws["!freeze"] = { xSplit: 0, ySplit: 1 };
       var wb = X.utils.book_new();
       X.utils.book_append_sheet(wb, ws, "Eventos");
+      var sobre = X.utils.aoa_to_sheet([
+        ["Eventos Goiás", location.href.split("#")[0]],
+        ["Dados coletados em", brHora(horaColeta())],
+        ["Exportado em", brHora(emGoias(new Date().toISOString()))],
+        ["Eventos no arquivo", lista.length]
+      ]);
+      sobre["!cols"] = [{ wch: 22 }, { wch: 50 }];
+      X.utils.book_append_sheet(wb, sobre, "Sobre");
       X.writeFile(wb, nome, { compression: true });
       aviso("Baixado: " + lista.length + " evento" + (lista.length === 1 ? "" : "s"));
     }).catch(function () {
@@ -634,7 +672,8 @@
       L.push("SUMMARY:" + e2(e.nome));
       var loc = [e.local, e.endereco, e.cidade ? e.cidade + " - GO" : ""].filter(Boolean).join(", ");
       if (loc) L.push("LOCATION:" + e2(loc));
-      L.push("DESCRIPTION:" + e2("Ingressos: " + e.link + (e.organizador ? "\nOrganizador: " + e.organizador : "")));
+      L.push("DESCRIPTION:" + e2("Ingressos: " + e.link + (e.organizador ? "\nOrganizador: " + e.organizador : "") +
+        "\nDados coletados em " + brHora(e.conferido || horaColeta()) + " (Eventos Goiás)"));
       L.push("URL:" + e.link, "END:VEVENT");
     });
     L.push("END:VCALENDAR");
@@ -648,6 +687,100 @@
     document.body.appendChild(a); a.click();
     setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
   }
+
+  /* ---------- botão Atualizar (coleta na hora) ---------- */
+  // O Worker diz se há coleta rodando; enquanto roda, o site consulta a cada 15 s e,
+  // quando termina, recarrega os eventos sozinho.
+  var coleta = { rodando: false, pode: false, libera: "", iniciada: "", pedi: false, timer: 0, ultimaFim: "" };
+
+  function textoRodando() {
+    if (!coleta.iniciada) return "coleta nova pedida";
+    var min = Math.max(0, Math.round((Date.now() - Date.parse(coleta.iniciada)) / 60000));
+    return "coleta nova em andamento há " + min + " min (leva uns 8)";
+  }
+
+  function desenhaBotao() {
+    var b = $("bt-atualizar"), t = b.querySelector("span");
+    b.classList.toggle("girando", coleta.rodando);
+    b.setAttribute("aria-busy", coleta.rodando);
+    t.textContent = coleta.rodando ? "Coletando…" : "Atualizar";
+    b.setAttribute("aria-label", t.textContent);
+    b.title = coleta.rodando ? cap(textoRodando()) :
+      coleta.pode ? "Buscar os eventos nas ticketeiras agora" :
+      "Próxima coleta liberada às " + emGoias(coleta.libera).slice(11, 16);
+    b.classList.toggle("travado", !coleta.rodando && !coleta.pode);
+    escreveColeta();
+  }
+
+  function aplicaEstado(e) {
+    var tinha = coleta.rodando;
+    coleta.rodando = !!e.rodando;
+    coleta.pode = !!e.pode;
+    coleta.libera = e.libera_em || "";
+    // Só conta os minutos quando o GitHub já começou a rodar (não na fila).
+    coleta.iniciada = e.etapa === "in_progress" ? e.iniciada : "";
+    $("bt-atualizar").hidden = false;
+    desenhaBotao();
+    if (tinha && !coleta.rodando) terminou(e);
+    clearTimeout(coleta.timer);
+    if (coleta.rodando) coleta.timer = setTimeout(consulta, 15000);
+  }
+
+  function terminou(e) {
+    if (e.ultima && !e.ultima.ok) {
+      aviso("A coleta nova falhou. Continuam os dados de " + brHora(horaColeta()) + ".");
+      coleta.pedi = false;
+      return;
+    }
+    // O GitHub Pages leva alguns segundos para servir o arquivo novo.
+    var antes = horaColeta(), tentativas = 0;
+    (function tenta() {
+      carrega(true).then(function () {
+        if (horaColeta() === antes && ++tentativas < 6) { setTimeout(tenta, 10000); return; }
+        aviso(horaColeta() === antes ? "Coleta concluída. Recarregue a página em instantes." : "Eventos atualizados: dados coletados às " + horaColeta().slice(11, 16));
+        coleta.pedi = false;
+      }).catch(function () { if (++tentativas < 6) setTimeout(tenta, 10000); });
+    })();
+  }
+
+  function consulta() {
+    if (document.hidden && coleta.rodando) { coleta.timer = setTimeout(consulta, 15000); return; }
+    fetch(ATUALIZADOR + "/estado", { cache: "no-store" })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(aplicaEstado)
+      .catch(function () {
+        // Sem o intermediário (fora do ar ou ainda sem permissão): o botão some.
+        if (!coleta.rodando) $("bt-atualizar").hidden = true;
+        else coleta.timer = setTimeout(consulta, 30000);
+      });
+  }
+
+  function pedeColeta() {
+    if (coleta.rodando) { aviso(cap(textoRodando()) + ". A página se atualiza sozinha."); return; }
+    if (!coleta.pode && coleta.libera) {
+      aviso("Última coleta há pouco. Próxima liberada às " + emGoias(coleta.libera).slice(11, 16) + ".");
+      return;
+    }
+    var b = $("bt-atualizar");
+    b.disabled = true;
+    fetch(ATUALIZADOR + "/atualizar", { method: "POST" })
+      .then(function (r) { return r.json().then(function (j) { return { st: r.status, j: j }; }); })
+      .then(function (x) {
+        if (x.st === 202) { coleta.pedi = true; aviso("Coleta pedida. Leva uns 8 minutos; a página se atualiza sozinha."); }
+        else if (x.j.erro === "rodando") aviso("Já tem uma coleta em andamento. A página se atualiza sozinha.");
+        else if (x.j.erro === "trava") aviso("Última coleta há pouco. Próxima liberada às " + emGoias(x.j.libera_em).slice(11, 16) + ".");
+        else aviso("Não deu para pedir a coleta agora. Tente de novo em instantes.");
+        if (x.j && "rodando" in x.j) aplicaEstado(x.j);
+      })
+      .catch(function () { aviso("Não deu para pedir a coleta agora. Tente de novo em instantes."); })
+      .then(function () { b.disabled = false; });
+  }
+  $("bt-atualizar").addEventListener("click", pedeColeta);
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden && dados) { clearTimeout(coleta.timer); consulta(); }
+  });
+  // Atualiza o "há N min" do topo enquanto a coleta roda.
+  setInterval(function () { if (coleta.rodando) desenhaBotao(); }, 60000);
 
   /* ---------- endereço (link compartilhável dos filtros) ---------- */
   function escreveHash() {
@@ -722,5 +855,5 @@
   });
 
   ajustaBarra();
-  carrega();
+  carrega().then(consulta, function () {});
 })();

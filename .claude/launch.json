@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "site",
+      "runtimeExecutable": "python",
+      "runtimeArgs": ["servir.py", "--sem-navegador"],
+      "port": 8000
+    }
+  ]
+}

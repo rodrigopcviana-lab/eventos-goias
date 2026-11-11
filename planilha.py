@@ -13,6 +13,7 @@ COLUNAS = [
     ("Data", 11), ("Até", 11), ("Dia", 6), ("Hora", 7), ("Evento", 48), ("Local", 30),
     ("Bairro", 20), ("Cidade", 20), ("Categoria", 22), ("Organizador", 26),
     ("Ticketeira", 18), ("Link", 14), ("Situação", 16), ("Visto pela 1ª vez", 14),
+    ("Conferido em", 17),
 ]
 
 AZUL = PatternFill("solid", fgColor="1F3A5F")
@@ -33,7 +34,13 @@ def _linha(e):
         e["nome"], e.get("local", ""), e.get("bairro", ""), e.get("cidade", ""),
         e.get("categoria", ""), e.get("organizador", ""), e["fonte"], e["link"],
         e.get("situacao", ""), datetime.fromisoformat(e["primeiro_visto"]).date(),
+        _hora_br(e.get("ultimo_visto")),
     ]
+
+
+def _hora_br(iso):
+    """'2026-11-11T15:31:..' -> '11/11/2026 15:31' (texto, igual em todo Excel)."""
+    return datetime.fromisoformat(iso).strftime("%d/%m/%Y %H:%M") if iso else ""
 
 
 def _aba(wb, titulo, eventos, primeira=False):
@@ -52,7 +59,7 @@ def _aba(wb, titulo, eventos, primeira=False):
         r = ws.max_row
         ws.cell(row=r, column=1).number_format = "DD/MM/YYYY"
         ws.cell(row=r, column=2).number_format = "DD/MM/YYYY"
-        ws.cell(row=r, column=len(COLUNAS)).number_format = "DD/MM/YYYY"
+        ws.cell(row=r, column=len(COLUNAS) - 1).number_format = "DD/MM/YYYY"
         link = ws.cell(row=r, column=col_link)
         link.value = "abrir"
         link.hyperlink = e["link"]
@@ -73,7 +80,8 @@ def _resumo(wb, eventos_futuros, status):
     ws.column_dimensions["A"].width = 28
     ws.column_dimensions["B"].width = 14
     ws.column_dimensions["C"].width = 60
-    ws.append(["Última rodada", status["fim"][:16].replace("T", " ")])
+    ws.append(["Coleta iniciada em", _hora_br(status.get("inicio"))])
+    ws.append(["Coleta concluída em", _hora_br(status.get("fim"))])
     ws.append(["Eventos futuros na planilha", len(eventos_futuros)])
     ws.append(["Novos hoje", sum(1 for e in eventos_futuros if e.get("situacao") == "Novo hoje")])
     ws.append([])
@@ -129,12 +137,12 @@ def grava(caminho, historico, status, hoje):
     try:
         with open(csv_path, "w", newline="", encoding="utf-8-sig") as f:
             w = csv.writer(f, delimiter=";")
-            w.writerow([c for c, _ in COLUNAS[:-3]] + ["Link", "Situação"])
+            w.writerow([c for c, _ in COLUNAS[:-4]] + ["Link", "Situação", "Conferido em"])
             for e in futuros:
                 lin = _linha(e)
                 for i in (0, 1):
                     lin[i] = lin[i].strftime("%d/%m/%Y") if lin[i] else ""
-                w.writerow(lin[:11] + [e["link"], e.get("situacao", "")])
+                w.writerow(lin[:11] + [e["link"], e.get("situacao", ""), lin[-1]])
     except PermissionError:
         pass
     return final, len(futuros), len(novos)
