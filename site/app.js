@@ -223,6 +223,7 @@
     $("bt-visao").textContent = st.visao === "lista" ? "Visão de planilha" : "Visão de lista";
     desenhaPeriodos();
     desenhaChips();
+    desenhaFontes();
     var n = nFiltros();
     $("n-filtros").hidden = !n; $("n-filtros").textContent = n;
     $("so-novos").checked = st.soNovos;
@@ -283,6 +284,35 @@
     if (nFiltros() || st.busca) h += '<button type="button" class="link" data-acao="limpar">Limpar filtros</button>';
     $("chips").innerHTML = h;
   }
+
+  // Linha das ticketeiras, sempre à vista: clique escolhe uma ou mais; "Todas" limpa.
+  function desenhaFontes() {
+    var caixa = $("fontes");
+    caixa.hidden = st.aba === "resumo";
+    if (caixa.hidden || !dados) return;
+    var cont = {};
+    filtra(baseDaAba(st.aba), { ignora: "ticketeira" }).forEach(function (e) { cont[e.ticketeira] = (cont[e.ticketeira] || 0) + 1; });
+    var nomes = Object.keys(dados.fontes || {});
+    Object.keys(cont).forEach(function (n) { if (nomes.indexOf(n) < 0) nomes.push(n); });
+    var sel = st.filtros.ticketeira || new Set();
+    nomes.sort(function (a, b) { return (cont[b] || 0) - (cont[a] || 0) || a.localeCompare(b, "pt-BR"); });
+    var h = '<span class="rot">Ticketeiras</span><button type="button" data-fonte="" aria-pressed="' + !sel.size + '">Todas</button>';
+    nomes.forEach(function (n) {
+      var c = cont[n] || 0, ligado = sel.has(n);
+      h += '<button type="button" data-fonte="' + esc(n) + '" aria-pressed="' + ligado + '"' + (!c && !ligado ? " disabled" : "") + ">" +
+        esc(n) + " <small>" + c + "</small></button>";
+    });
+    caixa.innerHTML = h;
+  }
+  $("fontes").addEventListener("click", function (ev) {
+    var t = ev.target.closest("button[data-fonte]");
+    if (!t) return;
+    var n = t.dataset.fonte, s = st.filtros.ticketeira || new Set();
+    if (!n) s = new Set();
+    else if (s.has(n)) s.delete(n); else s.add(n);
+    if (s.size) st.filtros.ticketeira = s; else delete st.filtros.ticketeira;
+    desenha();
+  });
 
   var ICONE_FUNIL = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>';
   var ICONE_SETA = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';

@@ -53,6 +53,16 @@ a { color: var(--verde); }
 @keyframes gira { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .bt-atualizar.girando svg { animation: none; } }
 
+/* ---------- ticketeiras (filtro sempre à vista) ---------- */
+.fontes { display: flex; align-items: center; gap: 8px; padding: 8px 24px; border-bottom: 1px solid var(--grade); background: #fff; overflow-x: auto; scrollbar-width: none; }
+.fontes::-webkit-scrollbar { display: none; }
+.fontes .rot { font-size: 12px; font-weight: 600; color: var(--texto-3); text-transform: uppercase; letter-spacing: .04em; flex: none; }
+.fontes button { flex: none; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid var(--borda); border-radius: 18px; background: #fff; cursor: pointer; font-size: 13px; white-space: nowrap; }
+.fontes button small { color: var(--texto-3); font-size: 12px; }
+.fontes button[aria-pressed="true"] { background: var(--verde); border-color: var(--verde); color: #fff; font-weight: 600; }
+.fontes button[aria-pressed="true"] small { color: #D6EBDD; }
+.fontes button:disabled { opacity: .45; cursor: default; }
+
 /* ---------- como funciona (sempre começa recolhido) ---------- */
 .como { background: var(--verde-claro); border-bottom: 1px solid var(--grade); font-size: 13px; }
 .como summary { display: flex; align-items: center; gap: 8px; padding: 8px 24px; cursor: pointer; list-style: none; color: var(--verde); font-weight: 600; min-height: 40px; }
@@ -262,6 +272,8 @@ legend, .rotulo { font-size: 12px; font-weight: 600; color: var(--texto-3); text
   .como summary { padding: 8px 16px; flex-wrap: wrap; row-gap: 0; }
   .como summary small { flex-basis: 100%; order: 3; margin: 0 0 0 24px; }
   .como-corpo { padding: 0 16px 12px; }
+  .fontes { padding: 8px 16px; }
+  .fontes button { min-height: 38px; }
   #bt-exportar { width: 44px; height: 44px; padding: 0; justify-content: center; background: transparent; color: #fff; border: 1px solid #8DBFA0; }
   .busca-celular { width: 100%; gap: 8px; }
   .busca-celular .busca { flex: 1; min-height: 44px; border: 0; }

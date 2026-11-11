@@ -27,6 +27,8 @@ manda um e-mail para o dono do repositório.
 
 ## O site
 
+- **Ticketeiras**: linha sempre à vista com cada ticketeira e quantos eventos
+  ela tem; clique escolhe uma ou mais (vale no computador e no celular).
 - **No computador**: visual de planilha (letras de coluna, número de linha,
   grade), com filtro em cada coluna como o autofiltro do Excel, busca,
   período (hoje, fim de semana, este mês, datas) e as abas Próximos eventos,
