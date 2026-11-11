@@ -7,7 +7,8 @@ Projeto à parte, sem relação com nenhum outro repositório.
 
 ## Como funciona
 
-Todo dia às 07:40 (horário de Goiás) o GitHub Actions
+Três vezes por dia, por volta de 07:40, 13:40 e 19:40 (horário de Goiás), o
+GitHub Actions
 (`.github/workflows/atualiza.yml`):
 
 1. roda o robô (`robo_eventos.py`), que visita as ticketeiras e pega só os
@@ -54,8 +55,12 @@ manda um e-mail para o dono do repositório.
   Ele guarda a permissão do GitHub (segredo `GITHUB_TOKEN`: token
   fine-grained só deste repositório, Actions: Read and write) e dispara o
   workflow no máximo uma vez a cada 30 minutos, nunca com outra coleta
-  rodando. Enquanto a coleta roda, o site mostra o andamento e recarrega os
-  eventos sozinho no fim. Sem o segredo, o botão some e o resto funciona.
+  rodando (a trava vale também depois das coletas automáticas). O site
+  explica isso num quadro "Como os eventos são atualizados", que sempre abre
+  recolhido. Enquanto a coleta roda, o site mostra o andamento e recarrega os
+  eventos sozinho no fim. Sem o segredo, o botão avisa que está indisponível e o resto funciona.
+  Os horários automáticos ficam no `cron` do workflow e em `AUTOMATICAS`
+  (`site/app.js`): mudar nos dois.
   - Testes: `node --test worker/test/index.test.mjs`
   - Publicar: `cd worker` e `npx wrangler deploy`
   - Trocar o token: `cd worker` e `npx wrangler secret put GITHUB_TOKEN`

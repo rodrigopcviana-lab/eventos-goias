@@ -1,4 +1,4 @@
-# Todo dia às 07:40 (horário de Goiás) o GitHub roda o robô, guarda o
+# Três vezes por dia (07:40, 13:40 e 19:40, horário de Goiás) o GitHub roda o robô, guarda o
 # histórico no repositório e publica o site no GitHub Pages.
 # "Run workflow" na aba Actions roda na hora. Mexer só no site (pasta site/)
 # republica sem coletar de novo.
@@ -6,7 +6,7 @@ name: Atualiza eventos
 
 on:
   schedule:
-    - cron: "40 10 * * *"   # 10:40 UTC = 07:40 em Goiás
+    - cron: "40 10,16,22 * * *"   # UTC; em Goiás: 07:40, 13:40 e 19:40 (o site lista os mesmos horários em app.js)
   workflow_dispatch:
   push:
     branches: [main]

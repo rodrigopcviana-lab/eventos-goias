@@ -122,7 +122,9 @@
     var at = horaColeta(), sub = $("atualizado");
     var n = todos.filter(function (e) { return e._termina >= hoje; }).length;
     var quando = at.slice(0, 10) === hoje ? "hoje, " + br(at.slice(0, 10)) + ", às " + at.slice(11, 16) : "em " + brHora(at);
-    var txt = "Dados coletados " + quando + " · " + n + " eventos · " + Object.keys(dados.fontes || {}).length + " ticketeiras";
+    var txt = ehCelular()
+      ? "Coleta " + (at.slice(0, 10) === hoje ? "de hoje, " + br(at.slice(0, 10)).slice(0, 5) + "," : "de " + br(at.slice(0, 10))) + " às " + at.slice(11, 16) + " · " + n + " eventos"
+      : "Dados coletados " + quando + " · " + n + " eventos · " + Object.keys(dados.fontes || {}).length + " ticketeiras";
     sub.classList.remove("alerta");
     // Mais de 36 h sem atualizar: a rodada diária falhou.
     if (Date.now() - new Date(at.slice(0, 16) + ":00-03:00").getTime() > 36 * 3600 * 1000) {
@@ -351,7 +353,7 @@
       (c.inicio ? "<tr><td>Começou</td><td>" + esc(brHora(c.inicio)) + "</td></tr>" : "") +
       "<tr><td>Terminou</td><td>" + esc(brHora(horaColeta())) + "</td></tr>" +
       (c.paginas ? '<tr><td>Páginas lidas</td><td class="n">' + c.paginas + "</td></tr>" : "") +
-      '</tbody></table><p class="nota">A coleta roda sozinha todo dia às 07:40. O botão Atualizar, no topo, pede uma coleta na hora (no máximo uma a cada 30 minutos).</p></section>';
+      '</tbody></table><p class="nota">A coleta roda sozinha 3 vezes por dia, por volta de 07:40, 13:40 e 19:40. O botão Atualizar agora, no topo, pede uma coleta na hora (uma a cada 30 minutos, para todos que usam o site).</p></section>';
     h += '<section><h2>Ticketeiras na última rodada</h2><table><thead><tr><th>Ticketeira</th><th class="n">Eventos</th><th>Coleta</th></tr></thead><tbody>';
     var fs = dados.fontes || {};
     Object.keys(fs).forEach(function (nome) {
@@ -691,7 +693,16 @@
   /* ---------- botão Atualizar (coleta na hora) ---------- */
   // O Worker diz se há coleta rodando; enquanto roda, o site consulta a cada 15 s e,
   // quando termina, recarrega os eventos sozinho.
-  var coleta = { rodando: false, pode: false, libera: "", iniciada: "", pedi: false, timer: 0, ultimaFim: "" };
+  var coleta = { rodando: false, pode: false, libera: "", iniciada: "", pedi: false, timer: 0, ligado: null };
+  // Mesmos horários do cron em .github/workflows/atualiza.yml (horário de Goiás).
+  var AUTOMATICAS = ["07:40", "13:40", "19:40"];
+
+  function proximaAutomatica() {
+    var agora = emGoias(new Date().toISOString()).slice(11, 16);
+    for (var i = 0; i < AUTOMATICAS.length; i++) if (AUTOMATICAS[i] > agora) return AUTOMATICAS[i];
+    return AUTOMATICAS[0] + " de amanhã";
+  }
+  function liberaHora() { return coleta.libera ? emGoias(coleta.libera).slice(11, 16) : ""; }
 
   function textoRodando() {
     if (!coleta.iniciada) return "coleta nova pedida";
@@ -701,14 +712,27 @@
 
   function desenhaBotao() {
     var b = $("bt-atualizar"), t = b.querySelector("span");
+    var travado = coleta.ligado && !coleta.rodando && !coleta.pode;
     b.classList.toggle("girando", coleta.rodando);
+    b.classList.toggle("travado", !!travado);
+    b.classList.toggle("desligado", coleta.ligado === false);
     b.setAttribute("aria-busy", coleta.rodando);
-    t.textContent = coleta.rodando ? "Coletando…" : "Atualizar";
-    b.setAttribute("aria-label", t.textContent);
+    // " agora" some no celular (CSS) para caber no topo.
+    t.innerHTML = coleta.rodando ? "Coletando…" : travado && liberaHora() ? "Liberado às " + liberaHora() : 'Atualizar<span class="agora"> agora</span>';
+    b.setAttribute("aria-label", coleta.rodando ? "Coletando" : travado ? "Atualizar: próxima liberada às " + liberaHora() : "Atualizar agora");
     b.title = coleta.rodando ? cap(textoRodando()) :
-      coleta.pode ? "Buscar os eventos nas ticketeiras agora" :
-      "Próxima coleta liberada às " + emGoias(coleta.libera).slice(11, 16);
-    b.classList.toggle("travado", !coleta.rodando && !coleta.pode);
+      coleta.ligado === false ? "Atualização na hora indisponível no momento" :
+      travado ? "Uma atualização a cada 30 minutos. Próxima liberada às " + liberaHora() :
+      "Buscar os eventos nas ticketeiras agora (uma vez a cada 30 minutos)";
+    // Resumo na linha do "Como os eventos são atualizados" (sempre visível, mesmo recolhido).
+    var dica = "· próxima automática por volta de " + proximaAutomatica() + " · botão: uma vez a cada 30 min";
+    if (coleta.rodando) dica = "· coleta em andamento";
+    else if (travado) dica += ", liberado às " + liberaHora();
+    $("atualizar-dica").textContent = dica;
+    $("como-libera").textContent = coleta.rodando ? "Agora: há uma coleta em andamento." :
+      travado ? "Agora: próxima liberada às " + liberaHora() + "." :
+      coleta.ligado === false ? "Agora: atualização na hora indisponível; vale o horário automático." :
+      coleta.ligado ? "Agora: liberado." : "";
     escreveColeta();
   }
 
@@ -719,7 +743,7 @@
     coleta.libera = e.libera_em || "";
     // Só conta os minutos quando o GitHub já começou a rodar (não na fila).
     coleta.iniciada = e.etapa === "in_progress" ? e.iniciada : "";
-    $("bt-atualizar").hidden = false;
+    coleta.ligado = true;
     desenhaBotao();
     if (tinha && !coleta.rodando) terminou(e);
     clearTimeout(coleta.timer);
@@ -749,16 +773,21 @@
       .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(aplicaEstado)
       .catch(function () {
-        // Sem o intermediário (fora do ar ou ainda sem permissão): o botão some.
-        if (!coleta.rodando) $("bt-atualizar").hidden = true;
+        // Sem o intermediário (fora do ar ou ainda sem permissão): o botão fica, mas avisa.
+        if (!coleta.rodando) { coleta.ligado = false; desenhaBotao(); }
         else coleta.timer = setTimeout(consulta, 30000);
       });
   }
 
   function pedeColeta() {
     if (coleta.rodando) { aviso(cap(textoRodando()) + ". A página se atualiza sozinha."); return; }
+    if (coleta.ligado === false) {
+      aviso("Atualização na hora indisponível no momento. Próxima automática por volta de " + proximaAutomatica() + ".");
+      consulta();
+      return;
+    }
     if (!coleta.pode && coleta.libera) {
-      aviso("Última coleta há pouco. Próxima liberada às " + emGoias(coleta.libera).slice(11, 16) + ".");
+      aviso("Uma atualização a cada 30 minutos. Próxima liberada às " + liberaHora() + ".");
       return;
     }
     var b = $("bt-atualizar");
@@ -768,7 +797,7 @@
       .then(function (x) {
         if (x.st === 202) { coleta.pedi = true; aviso("Coleta pedida. Leva uns 8 minutos; a página se atualiza sozinha."); }
         else if (x.j.erro === "rodando") aviso("Já tem uma coleta em andamento. A página se atualiza sozinha.");
-        else if (x.j.erro === "trava") aviso("Última coleta há pouco. Próxima liberada às " + emGoias(x.j.libera_em).slice(11, 16) + ".");
+        else if (x.j.erro === "trava") aviso("Uma atualização a cada 30 minutos. Próxima liberada às " + emGoias(x.j.libera_em).slice(11, 16) + ".");
         else aviso("Não deu para pedir a coleta agora. Tente de novo em instantes.");
         if (x.j && "rodando" in x.j) aplicaEstado(x.j);
       })
@@ -780,7 +809,11 @@
     if (!document.hidden && dados) { clearTimeout(coleta.timer); consulta(); }
   });
   // Atualiza o "há N min" do topo enquanto a coleta roda.
-  setInterval(function () { if (coleta.rodando) desenhaBotao(); }, 60000);
+  // e vira o botão de "Liberado às" para "Atualizar agora" quando chega a hora.
+  setInterval(function () {
+    if (coleta.ligado && !coleta.rodando && !coleta.pode && coleta.libera && Date.now() >= Date.parse(coleta.libera)) { consulta(); return; }
+    if (dados) desenhaBotao();
+  }, 30000);
 
   /* ---------- endereço (link compartilhável dos filtros) ---------- */
   function escreveHash() {
@@ -855,5 +888,6 @@
   });
 
   ajustaBarra();
+  desenhaBotao();
   carrega().then(consulta, function () {});
 })();

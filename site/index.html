@@ -22,12 +22,12 @@
     </div>
   </div>
   <div class="acoes-topo">
-    <button type="button" id="bt-atualizar" class="bt-contorno bt-icone" aria-label="Atualizar" hidden>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
-      <span>Atualizar</span>
+    <button type="button" id="bt-atualizar" class="bt-claro bt-atualizar" aria-describedby="atualizar-dica">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.34-5.66M20 4v5h-5"/></svg>
+      <span>Atualizar<span class="agora"> agora</span></span>
     </button>
     <button type="button" id="bt-visao" class="bt-contorno so-largo">Visão de lista</button>
-    <button type="button" id="bt-exportar" class="bt-claro">
+    <button type="button" id="bt-exportar" class="bt-contorno bt-icone">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
       <span>Exportar</span>
     </button>
@@ -41,6 +41,22 @@
     </button>
   </div>
 </header>
+
+<details class="como" id="como">
+  <summary>
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></svg>
+    <span>Como os eventos são atualizados</span>
+    <small id="atualizar-dica"></small>
+    <svg class="seta" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+  </summary>
+  <div class="como-corpo">
+    <p><strong>Sozinho, 3 vezes por dia:</strong> por volta de 07:40, 13:40 e 19:40 (horário de Goiás) o robô visita as ticketeiras e publica o que encontrou. O horário pode atrasar alguns minutos.</p>
+    <p><strong>Na hora, pelo botão Atualizar agora:</strong> pede uma coleta nova. Leva uns 8 minutos; a página mostra o andamento e se atualiza sozinha no fim.</p>
+    <p><strong>Limite de 30 minutos:</strong> o botão vale para todos que usam o site, então depois de cada coleta (pelo botão ou automática) a próxima só é liberada 30 minutos depois. <span id="como-libera"></span></p>
+    <p><strong>Data e hora mostradas</strong> no topo são as da última coleta. Cada evento também mostra quando foi conferido na ticketeira, e os arquivos exportados trazem essa informação.</p>
+    <p>Ficam de fora os sites que bloqueiam acesso automático: Shotgun, Ingresse, BaladApp, Q2 Ingressos, Meu Bilhete e Ticketou.</p>
+  </div>
+</details>
 
 <div class="faixa">
   <label class="busca so-largo"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#616161" stroke-width="2" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>
