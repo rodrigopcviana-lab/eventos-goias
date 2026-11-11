@@ -37,7 +37,8 @@
   var st = {
     aba: "proximos", periodo: "todos", de: "", ate: "", busca: "", soNovos: false,
     filtros: {}, ordem: { k: "data", dir: 1 }, visao: lerLocal("eg-visao") || "tabela",
-    marcados: new Set(JSON.parse(lerLocal("eg-marcados") || "[]"))
+    marcados: new Set(JSON.parse(lerLocal("eg-marcados") || "[]")),
+    notas: JSON.parse(lerLocal("eg-notas") || "{}") // anotações por evento, só neste aparelho
   };
   var visiveis = [];
   var $ = function (id) { return document.getElementById(id); };
@@ -158,6 +159,7 @@
 
   function baseDaAba(aba) {
     if (aba === "historico") return todos.slice();
+    if (aba === "selecionados") return todos.filter(function (e) { return st.marcados.has(e.id); });
     var fut = todos.filter(function (e) { return e._termina >= hoje; });
     if (aba === "novos") return fut.filter(function (e) { return e._novo; });
     return fut;
@@ -172,7 +174,8 @@
     return lista.filter(function (e) {
       if (iv && (e._termina < iv[0] || e._d > iv[1])) return false;
       if (st.soNovos && !e._novo) return false;
-      for (var i = 0; i < termos.length; i++) if (e._busca.indexOf(termos[i]) < 0) return false;
+      var onde = termos.length && st.notas[e.id] ? e._busca + " " + semAcento(st.notas[e.id]) : e._busca;
+      for (var i = 0; i < termos.length; i++) if (onde.indexOf(termos[i]) < 0) return false;
       for (var k in st.filtros) {
         if (k === opc.ignora) continue;
         var set = st.filtros[k];
@@ -188,7 +191,7 @@
   }
 
   // Evento que começou antes de hoje e segue em cartaz vai para o grupo "Em andamento", no fim.
-  function emAndamento(e) { return st.aba !== "historico" && e._d < hoje; }
+  function emAndamento(e) { return st.aba !== "historico" && e._d < hoje && e._termina >= hoje; }
   function grupo(e) { return emAndamento(e) ? "andamento" : e._d.slice(0, 7); }
   function rotuloGrupo(e) {
     return emAndamento(e) ? "Em andamento · começaram antes de hoje e seguem em cartaz" : cap(nomeMes(e._d || "0000-01"));
@@ -224,6 +227,7 @@
     desenhaPeriodos();
     desenhaChips();
     desenhaFontes();
+    $("n-sel").textContent = st.marcados.size ? "(" + st.marcados.size + ")" : "";
     var n = nFiltros();
     $("n-filtros").hidden = !n; $("n-filtros").textContent = n;
     $("so-novos").checked = st.soNovos;
@@ -239,6 +243,9 @@
     var base = baseDaAba(st.aba);
     visiveis = ordena(filtra(base));
     $("vazio").hidden = visiveis.length > 0;
+    $("vazio").innerHTML = st.aba === "selecionados" && !base.length
+      ? "Nenhum evento selecionado ainda. Abra um evento e toque em <strong>Selecionar</strong>" + (ehCelular() ? "." : ", ou clique no número da linha.")
+      : 'Nenhum evento com esses filtros. <button type="button" class="link" data-acao="limpar">Limpar filtros</button>';
     var partes = [];
     if (st.periodo !== "todos") partes.push(PERIODOS.filter(function (p) { return p[0] === st.periodo; })[0][1]);
     for (var k in st.filtros) {
@@ -314,6 +321,12 @@
     desenha();
   });
 
+  function notaHtml(e) {
+    var n = st.notas[e.id];
+    if (!n) return "";
+    return '<span class="nota-ev"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 20h4L19 9l-4-4L4 16z"/></svg><span>' + esc(n.length > 140 ? n.slice(0, 140) + "…" : n) + "</span></span>";
+  }
+
   var ICONE_FUNIL = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>';
   var ICONE_SETA = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
   var ICONE_ORDEM = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M8 4v16M4 16l4 4 4-4M16 20V4M12 8l4-4 4 4"/></svg>';
@@ -344,10 +357,10 @@
       var marc = st.marcados.has(e.id);
       var cls = marc ? "marcado" : e._novo ? "novo" : e._saiu ? "saiu" : "";
       h.push('<tr class="' + cls + '"><th class="num"><button type="button" data-marca="' + esc(e.id) + '" aria-pressed="' + marc +
-        '" title="Marcar para exportar">' + (n++) + "</button></th>" +
+        '" title="Selecionar (aba Selecionados)">' + (n++) + "</button></th>" +
         '<td class="nw">' + br(e._d) + '</td><td class="nw">' + br(e._ate) + "</td><td>" + e._dia + "</td><td>" + e._hora + "</td>" +
         '<td class="evento"><button type="button" data-abre="' + esc(e.id) + '">' + esc(e.nome) + "</button>" +
-        (e._novo ? '<span class="tag novo">novo</span>' : "") + (e._saiu ? '<span class="tag saiu">saiu do site</span>' : "") + "</td>" +
+        (e._novo ? '<span class="tag novo">novo</span>' : "") + (e._saiu ? '<span class="tag saiu">saiu do site</span>' : "") + notaHtml(e) + "</td>" +
         "<td>" + esc(e.local) + "</td><td>" + esc(e.bairro) + "</td><td>" + esc(e.cidade) + "</td><td>" + esc(e.categoria) + "</td>" +
         '<td class="nw">' + esc(e.ticketeira) + '</td><td><a href="' + esc(e.link) + '" target="_blank" rel="noopener">abrir</a></td></tr>');
     });
@@ -371,7 +384,7 @@
         '<span class="info"><span class="nome">' + esc(e.nome) + '</span><span class="onde">' + esc(onde) + "</span>" +
         '<span class="tags"><span>' + esc(e.ticketeira) + "</span>" + (e.categoria ? "<span>" + esc(e.categoria) + "</span>" : "") +
         (e._novo ? '<span class="t-novo">novo</span>' : "") + (e._saiu ? "<span>saiu do site</span>" : "") +
-        (marc ? '<span class="t-marc">marcado</span>' : "") + "</span></span></button>");
+        (marc ? '<span class="t-marc">selecionado</span>' : "") + "</span>" + notaHtml(e) + "</span></button>");
     });
     $("lista").innerHTML = h.join("");
   }
@@ -543,6 +556,7 @@
     }).join("");
     var l = $("ev-link"); l.href = e.link; l.textContent = "Ver ingressos no " + e.ticketeira;
     atualizaMarcar();
+    $("ev-nota").value = st.notas[e.id] || "";
     var d = $("dlg-evento");
     if (!d.open) d.showModal();
     history.replaceState(null, "", "#e=" + encodeURIComponent(e.id));
@@ -550,9 +564,20 @@
   function atualizaMarcar() {
     var b = $("ev-marcar"), m = aberto && st.marcados.has(aberto.id);
     b.setAttribute("aria-pressed", !!m);
-    b.querySelector("span").textContent = m ? "Marcado" : "Marcar";
+    b.querySelector("span").textContent = m ? "Selecionado" : "Selecionar";
   }
-  $("dlg-evento").addEventListener("close", function () { aberto = null; escreveHash(); });
+  var tNota;
+  function salvaNota() {
+    if (!aberto) return;
+    var v = $("ev-nota").value.trim();
+    if (v) st.notas[aberto.id] = v; else delete st.notas[aberto.id];
+    gravaLocal("eg-notas", JSON.stringify(st.notas));
+  }
+  $("ev-nota").addEventListener("input", function () { clearTimeout(tNota); tNota = setTimeout(salvaNota, 300); });
+  $("dlg-evento").addEventListener("close", function () {
+    clearTimeout(tNota); salvaNota();
+    aberto = null; escreveHash(); desenha();
+  });
   $("dlg-evento").addEventListener("click", function (ev) {
     var t = ev.target.closest("[data-ev]");
     if (!t || !aberto) return;
@@ -573,7 +598,10 @@
   function alternaMarca(id) {
     if (st.marcados.has(id)) st.marcados.delete(id); else st.marcados.add(id);
     gravaLocal("eg-marcados", JSON.stringify(Array.from(st.marcados)));
-    desenhaTabela(); desenhaLista();
+    $("n-sel").textContent = st.marcados.size ? "(" + st.marcados.size + ")" : "";
+    // Na aba Selecionados a lista muda; nas outras só a cor da linha.
+    if (st.aba === "selecionados" && !$("dlg-evento").open) desenha(); else { desenhaTabela(); desenhaLista(); }
+    aviso(st.marcados.has(id) ? "Selecionado: está na aba Selecionados" : "Tirado dos selecionados");
   }
 
   /* ---------- exportar ---------- */
@@ -591,7 +619,7 @@
     $("ex-n-marcados").textContent = st.marcados.size;
     $("dlg-exportar").showModal();
   }
-  function nomeAba() { return { proximos: "Próximos", novos: "Novos hoje", historico: "Histórico", resumo: "Próximos" }[st.aba]; }
+  function nomeAba() { return { proximos: "Próximos", novos: "Novos hoje", selecionados: "Selecionados", historico: "Histórico", resumo: "Próximos" }[st.aba]; }
 
   $("ex-mes").addEventListener("focus", function () { document.querySelector('input[name=oque][value=mes]').checked = true; });
   $("bt-baixar").addEventListener("click", function () {
@@ -600,7 +628,7 @@
     var lista, rotulo;
     if (oque === "tela") {
       lista = st.aba === "resumo" ? ordena(filtra(baseDaAba("proximos"))) : visiveis.slice();
-      rotulo = st.aba === "historico" ? "historico" : st.aba === "novos" ? "novos" : "proximos";
+      rotulo = st.aba === "historico" || st.aba === "novos" || st.aba === "selecionados" ? st.aba : "proximos";
     } else if (oque === "mes") {
       var m = $("ex-mes").value;
       lista = filtra(todos, { semPeriodo: true }).filter(function (e) { return e._d.slice(0, 7) === m; })
@@ -608,7 +636,7 @@
       rotulo = m ? MESES[+m.slice(5, 7) - 1] + "-" + m.slice(0, 4) : "mes";
     } else {
       lista = todos.filter(function (e) { return st.marcados.has(e.id); });
-      rotulo = "marcados";
+      rotulo = "selecionados";
     }
     if (!lista.length) { aviso("Nada para exportar com essa escolha"); return; }
     var nome = "eventos-goias_" + rotulo + "_" + hoje;
@@ -622,10 +650,10 @@
     return "evento_" + semAcento(nome).replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 50) + "." + ext;
   }
 
-  var CAB = ["Data", "Até", "Dia", "Hora", "Evento", "Local", "Endereço", "Bairro", "Cidade", "Categoria", "Organizador", "Ticketeira", "Link", "Situação", "Visto pela 1ª vez", "Conferido em"];
+  var CAB = ["Data", "Até", "Dia", "Hora", "Evento", "Local", "Endereço", "Bairro", "Cidade", "Categoria", "Organizador", "Ticketeira", "Link", "Situação", "Visto pela 1ª vez", "Conferido em", "Anotação"];
   function linha(e) {
     return [br(e._d), br(e._ate), e._dia, e._hora, e.nome, e.local, e.endereco, e.bairro, e.cidade, e.categoria, e.organizador, e.ticketeira, e.link, e.situacao, br(e.visto),
-      brHora(e.conferido || horaColeta()).replace(" às ", " ")];
+      brHora(e.conferido || horaColeta()).replace(" às ", " "), st.notas[e.id] || ""];
   }
   function csv(lista) {
     var q = function (v) { v = String(v == null ? "" : v); return /[;"\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
@@ -660,7 +688,7 @@
         if (ws[ref]) ws[ref].l = { Target: e.link };
         [0, 1, 14].forEach(function (c) { var rc = X.utils.encode_cell({ r: i + 1, c: c }); if (ws[rc]) ws[rc].z = "dd/mm/yyyy"; });
       });
-      ws["!cols"] = [11, 11, 6, 7, 48, 30, 30, 20, 20, 22, 26, 18, 10, 14, 14, 17].map(function (w) { return { wch: w }; });
+      ws["!cols"] = [11, 11, 6, 7, 48, 30, 30, 20, 20, 22, 26, 18, 10, 14, 14, 17, 40].map(function (w) { return { wch: w }; });
       ws["!autofilter"] = { ref: X.utils.encode_range({ s: { r: 0, c: 0 }, e: { r: lista.length, c: CAB.length - 1 } }) };
       ws["!freeze"] = { xSplit: 0, ySplit: 1 };
       var wb = X.utils.book_new();
@@ -705,6 +733,7 @@
       var loc = [e.local, e.endereco, e.cidade ? e.cidade + " - GO" : ""].filter(Boolean).join(", ");
       if (loc) L.push("LOCATION:" + e2(loc));
       L.push("DESCRIPTION:" + e2("Ingressos: " + e.link + (e.organizador ? "\nOrganizador: " + e.organizador : "") +
+        (st.notas[e.id] ? "\nAnotação: " + st.notas[e.id] : "") +
         "\nDados coletados em " + brHora(e.conferido || horaColeta()) + " (Eventos Goiás)"));
       L.push("URL:" + e.link, "END:VEVENT");
     });
@@ -723,7 +752,8 @@
   /* ---------- botão Atualizar (coleta na hora) ---------- */
   // O Worker diz se há coleta rodando; enquanto roda, o site consulta a cada 15 s e,
   // quando termina, recarrega os eventos sozinho.
-  var coleta = { rodando: false, pode: false, libera: "", iniciada: "", pedi: false, timer: 0, ligado: null };
+  // duracao: quanto a última coleta levou (do GitHub), para a contagem regressiva.
+  var coleta = { rodando: false, pode: false, libera: "", iniciada: "", pedi: false, timer: 0, ligado: null, duracao: 8 * 60000 };
   // Mesmos horários do cron em .github/workflows/atualiza.yml (horário de Goiás).
   var AUTOMATICAS = ["07:40", "13:40", "19:40"];
 
@@ -734,10 +764,19 @@
   }
   function liberaHora() { return coleta.libera ? emGoias(coleta.libera).slice(11, 16) : ""; }
 
+  // Contagem regressiva: início da coleta + duração da última coleta.
+  function falta() {
+    if (!coleta.iniciada) return coleta.duracao;
+    return Date.parse(coleta.iniciada) + coleta.duracao - Date.now();
+  }
+  function relogio(ms) {
+    var s = Math.max(0, Math.round(ms / 1000));
+    return Math.floor(s / 60) + ":" + (s % 60 < 10 ? "0" : "") + (s % 60);
+  }
+  function minutos() { return Math.max(1, Math.round(coleta.duracao / 60000)); }
   function textoRodando() {
-    if (!coleta.iniciada) return "coleta nova pedida";
-    var min = Math.max(0, Math.round((Date.now() - Date.parse(coleta.iniciada)) / 60000));
-    return "coleta nova em andamento há " + min + " min (leva uns 8)";
+    var f = falta();
+    return f > 0 ? "coleta nova: faltam uns " + relogio(f) : "coleta nova quase pronta";
   }
 
   function desenhaBotao() {
@@ -748,15 +787,17 @@
     b.classList.toggle("desligado", coleta.ligado === false);
     b.setAttribute("aria-busy", coleta.rodando);
     // " agora" some no celular (CSS) para caber no topo.
-    t.innerHTML = coleta.rodando ? "Coletando…" : travado && liberaHora() ? "Liberado às " + liberaHora() : 'Atualizar<span class="agora"> agora</span>';
-    b.setAttribute("aria-label", coleta.rodando ? "Coletando" : travado ? "Atualizar: próxima liberada às " + liberaHora() : "Atualizar agora");
+    var f = falta();
+    t.innerHTML = coleta.rodando ? '<span class="agora">Coletando </span>' + (f > 0 ? relogio(f) : "quase…") :
+      travado && liberaHora() ? "Liberado às " + liberaHora() : 'Atualizar<span class="agora"> agora</span>';
+    b.setAttribute("aria-label", coleta.rodando ? "Coletando, " + textoRodando() : travado ? "Atualizar: próxima liberada às " + liberaHora() : "Atualizar agora");
     b.title = coleta.rodando ? cap(textoRodando()) :
       coleta.ligado === false ? "Atualização na hora indisponível no momento" :
       travado ? "Uma atualização a cada 30 minutos. Próxima liberada às " + liberaHora() :
       "Buscar os eventos nas ticketeiras agora (uma vez a cada 30 minutos)";
     // Resumo na linha do "Como os eventos são atualizados" (sempre visível, mesmo recolhido).
     var dica = "· próxima automática por volta de " + proximaAutomatica() + " · botão: uma vez a cada 30 min";
-    if (coleta.rodando) dica = "· coleta em andamento";
+    if (coleta.rodando) dica = "· " + textoRodando();
     else if (travado) dica += ", liberado às " + liberaHora();
     $("atualizar-dica").textContent = dica;
     $("como-libera").textContent = coleta.rodando ? "Agora: há uma coleta em andamento." :
@@ -771,8 +812,11 @@
     coleta.rodando = !!e.rodando;
     coleta.pode = !!e.pode;
     coleta.libera = e.libera_em || "";
-    // Só conta os minutos quando o GitHub já começou a rodar (não na fila).
-    coleta.iniciada = e.etapa === "in_progress" ? e.iniciada : "";
+    coleta.iniciada = e.rodando ? e.iniciada || coleta.iniciada : "";
+    if (e.ultima && e.ultima.inicio && e.ultima.fim) {
+      var d = Date.parse(e.ultima.fim) - Date.parse(e.ultima.inicio);
+      if (d > 2 * 60000 && d < 30 * 60000) coleta.duracao = d;
+    }
     coleta.ligado = true;
     desenhaBotao();
     if (tinha && !coleta.rodando) terminou(e);
@@ -820,12 +864,22 @@
       aviso("Uma atualização a cada 30 minutos. Próxima liberada às " + liberaHora() + ".");
       return;
     }
+    // Confirma antes: tempo, consumo e trava de 30 minutos.
+    $("conf-tempo").textContent = "uns " + minutos() + " minutos (a última coleta levou isso)";
+    $("dlg-atualizar").returnValue = "";
+    $("dlg-atualizar").showModal();
+  }
+  $("dlg-atualizar").addEventListener("close", function () {
+    if ($("dlg-atualizar").returnValue === "sim") dispara();
+  });
+
+  function dispara() {
     var b = $("bt-atualizar");
     b.disabled = true;
     fetch(ATUALIZADOR + "/atualizar", { method: "POST" })
       .then(function (r) { return r.json().then(function (j) { return { st: r.status, j: j }; }); })
       .then(function (x) {
-        if (x.st === 202) { coleta.pedi = true; aviso("Coleta pedida. Leva uns 8 minutos; a página se atualiza sozinha."); }
+        if (x.st === 202) { coleta.pedi = true; aviso("Coleta pedida. Leva uns " + minutos() + " minutos; a contagem está no topo."); }
         else if (x.j.erro === "rodando") aviso("Já tem uma coleta em andamento. A página se atualiza sozinha.");
         else if (x.j.erro === "trava") aviso("Uma atualização a cada 30 minutos. Próxima liberada às " + emGoias(x.j.libera_em).slice(11, 16) + ".");
         else aviso("Não deu para pedir a coleta agora. Tente de novo em instantes.");
@@ -838,12 +892,16 @@
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden && dados) { clearTimeout(coleta.timer); consulta(); }
   });
-  // Atualiza o "há N min" do topo enquanto a coleta roda.
-  // e vira o botão de "Liberado às" para "Atualizar agora" quando chega a hora.
+  // A cada segundo: contagem regressiva enquanto a coleta roda; e vira o botão
+  // de "Liberado às" para "Atualizar agora" quando chega a hora.
+  var tique = 0;
   setInterval(function () {
-    if (coleta.ligado && !coleta.rodando && !coleta.pode && coleta.libera && Date.now() >= Date.parse(coleta.libera)) { consulta(); return; }
+    tique++;
+    if (coleta.rodando) { if (dados) desenhaBotao(); return; }
+    if (tique % 30) return;
+    if (coleta.ligado && !coleta.pode && coleta.libera && Date.now() >= Date.parse(coleta.libera)) { consulta(); return; }
     if (dados) desenhaBotao();
-  }, 30000);
+  }, 1000);
 
   /* ---------- endereço (link compartilhável dos filtros) ---------- */
   function escreveHash() {

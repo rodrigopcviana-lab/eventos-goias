@@ -27,6 +27,15 @@ manda um e-mail para o dono do repositório.
 
 ## O site
 
+- **Selecionados e anotações**: no detalhe do evento dá para escrever uma
+  anotação e tocar em Selecionar (no computador, também clicando no número da
+  linha). Os selecionados ficam na aba Selecionados. Os dois ficam só no
+  aparelho e navegador de quem usa (localStorage) e vão junto nos arquivos
+  exportados (coluna "Anotação").
+- **Botão Atualizar**: pede confirmação (tempo, consumo, trava de 30 min) e
+  mostra uma contagem regressiva baseada na duração da última coleta. O
+  "puxar para atualizar" do celular está desligado (`overscroll-behavior`);
+  recarregar a página nunca dispara coleta.
 - **Ticketeiras**: linha sempre à vista com cada ticketeira e quantos eventos
   ela tem; clique escolhe uma ou mais (vale no computador e no celular).
 - **No computador**: visual de planilha (letras de coluna, número de linha,
