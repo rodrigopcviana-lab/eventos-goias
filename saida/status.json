@@ -1,0 +1,35 @@
+{
+ "inicio": "2026-11-11T14:27:10.963560-03:00",
+ "fontes": {
+  "Sympla": {
+   "eventos": 401,
+   "segundos": 224
+  },
+  "Bilheteria Digital": {
+   "eventos": 6,
+   "segundos": 15
+  },
+  "Outgo": {
+   "eventos": 1,
+   "segundos": 1
+  },
+  "Blacktag": {
+   "eventos": 0,
+   "segundos": 16
+  },
+  "OTicket": {
+   "eventos": 12,
+   "segundos": 23
+  },
+  "Virtual Ticket": {
+   "eventos": 0,
+   "segundos": 1
+  }
+ },
+ "fim": "2026-11-11T14:31:50.967188-03:00",
+ "pedidos": 159,
+ "planilha": "/home/user/grupo-iz-portal-source/eventos-goias/saida/eventos_goias.xlsx",
+ "eventos_futuros": 423,
+ "novos_hoje": 16,
+ "ok": true
+}

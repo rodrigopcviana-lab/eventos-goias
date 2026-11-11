@@ -1,0 +1,68 @@
+# Todo dia às 07:40 (horário de Goiás) o GitHub roda o robô, guarda o
+# histórico no repositório e publica o site no GitHub Pages.
+# "Run workflow" na aba Actions roda na hora. Mexer só no site (pasta site/)
+# republica sem coletar de novo.
+name: Atualiza eventos
+
+on:
+  schedule:
+    - cron: "40 10 * * *"   # 10:40 UTC = 07:40 em Goiás
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["site/**"]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: eventos
+  cancel-in-progress: false
+
+jobs:
+  atualiza:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - run: pip install -r requirements.txt
+
+      - name: Coleta nas ticketeiras
+        if: github.event_name != 'push'
+        run: python robo_eventos.py
+
+      - name: Guarda o histórico e a planilha
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "robo-eventos"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add dados saida
+          git commit -m "Eventos de $(TZ=America/Sao_Paulo date +%d/%m/%Y)" || echo "nada mudou"
+          git push
+
+      - name: Monta o site
+        run: |
+          mkdir _site
+          cp -r site/. _site/
+          cp saida/eventos.json saida/eventos_goias.xlsx saida/eventos_goias.csv _site/
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  publica:
+    needs: atualiza
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

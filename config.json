@@ -1,0 +1,44 @@
+{
+  "_leia": "Configuração do robô de eventos de Goiás. Pode editar à mão; o robô relê a cada rodada.",
+  "pasta_saida": "saida",
+  "nome_planilha": "eventos_goias.xlsx",
+  "pausa_entre_paginas_seg": 1.5,
+  "timeout_seg": 30,
+  "dias_para_tras_no_historico": 60,
+  "fontes": {
+    "sympla": {
+      "ligada": true,
+      "_leia": "A busca do Sympla é por raio: cada cidade-polo traz eventos dela e das vizinhas. Os polos abaixo cobrem o estado; eventos de fora de GO (DF, MG) são descartados.",
+      "polos": [
+        "goiania-go",
+        "anapolis-go",
+        "pirenopolis-go",
+        "goias-go",
+        "caldas-novas-go",
+        "catalao-go",
+        "rio-verde-go",
+        "jatai-go",
+        "formosa-go",
+        "uruacu-go",
+        "porangatu-go"
+      ],
+      "max_paginas_por_polo": 40
+    },
+    "bilheteria_digital": {"ligada": true, "buscar_detalhe": true},
+    "outgo": {"ligada": true},
+    "blacktag": {"ligada": true},
+    "oticket": {"ligada": true},
+    "virtualticket": {"ligada": true}
+  },
+  "cidades_go_reserva": [
+    "Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Águas Lindas de Goiás",
+    "Luziânia", "Valparaíso de Goiás", "Trindade", "Formosa", "Novo Gama",
+    "Senador Canedo", "Catalão", "Itumbiara", "Jataí", "Caldas Novas",
+    "Santo Antônio do Descoberto", "Goianésia", "Cidade Ocidental", "Mineiros",
+    "Cristalina", "Inhumas", "Jaraguá", "Quirinópolis", "Morrinhos", "Itaberaí",
+    "Uruaçu", "Porangatu", "Pirenópolis", "Goiás", "Alto Paraíso de Goiás",
+    "Niquelândia", "Ceres", "Iporá", "Posse", "São Luís de Montes Belos",
+    "Santa Helena de Goiás", "Bela Vista de Goiás", "Hidrolândia", "Nerópolis",
+    "Goianira", "Pires do Rio", "Ipameri", "Cavalcante", "Rio Quente"
+  ]
+}

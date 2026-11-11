@@ -1,0 +1,7 @@
+# dados/ e saida/ VÃO para o git: são o histórico que o robô do GitHub
+# precisa no dia seguinte (eventos públicos das ticketeiras, nada sigiloso).
+logs/
+.venv/
+__pycache__/
+_site/
+*.tmp
