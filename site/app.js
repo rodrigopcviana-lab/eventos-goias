@@ -45,7 +45,14 @@
 
   /* ---------- utilidades ---------- */
   function lerLocal(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
-  function gravaLocal(k, v) { try { localStorage.setItem(k, v); } catch (e) { /* sem armazenamento */ } }
+  function gravaLocal(k, v) {
+    try { localStorage.setItem(k, v); } catch (e) { /* sem armazenamento */ }
+    // Pede ao navegador para não apagar sozinho as anotações e seleções (quando ele permite).
+    if (k !== "eg-visao" && !gravaLocal._pediu && navigator.storage && navigator.storage.persist) {
+      gravaLocal._pediu = true;
+      navigator.storage.persist().catch(function () {});
+    }
+  }
   function esc(s) {
     return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) {
       return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c];
