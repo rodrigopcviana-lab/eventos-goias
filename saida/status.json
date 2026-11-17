@@ -1,35 +1,35 @@
 {
- "inicio": "2026-11-17T01:44:23.991455-03:00",
+ "inicio": "2026-11-17T16:19:11.908916-03:00",
  "fontes": {
   "Sympla": {
-   "eventos": 354,
-   "segundos": 208
+   "eventos": 360,
+   "segundos": 211
   },
   "Bilheteria Digital": {
    "eventos": 5,
-   "segundos": 12
+   "segundos": 15
   },
   "Outgo": {
    "eventos": 1,
-   "segundos": 2
+   "segundos": 1
   },
   "Blacktag": {
    "eventos": 0,
    "segundos": 1
   },
   "OTicket": {
-   "eventos": 12,
-   "segundos": 21
+   "eventos": 14,
+   "segundos": 50
   },
   "Virtual Ticket": {
    "eventos": 0,
-   "segundos": 0
+   "segundos": 1
   }
  },
- "fim": "2026-11-17T01:48:27.994272-03:00",
- "pedidos": 140,
+ "fim": "2026-11-17T16:23:50.436763-03:00",
+ "pedidos": 157,
  "planilha": "/home/runner/work/eventos-goias/eventos-goias/saida/eventos_goias.xlsx",
- "eventos_futuros": 376,
- "novos_hoje": 3,
+ "eventos_futuros": 385,
+ "novos_hoje": 12,
  "ok": true
 }
