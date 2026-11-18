@@ -1,13 +1,13 @@
 {
- "inicio": "2026-11-18T00:50:15.300272-03:00",
+ "inicio": "2026-11-18T16:00:12.763921-03:00",
  "fontes": {
   "Sympla": {
-   "eventos": 360,
-   "segundos": 199
+   "eventos": 324,
+   "segundos": 191
   },
   "Bilheteria Digital": {
-   "eventos": 0,
-   "erro": "HTTP 403 em https://www.bilheteriadigital.com/GO/as/1"
+   "eventos": 5,
+   "segundos": 13
   },
   "Outgo": {
    "eventos": 1,
@@ -26,10 +26,10 @@
    "segundos": 1
   }
  },
- "fim": "2026-11-18T00:54:00.134642-03:00",
- "pedidos": 143,
+ "fim": "2026-11-18T16:04:02.271941-03:00",
+ "pedidos": 139,
  "planilha": "/home/runner/work/eventos-goias/eventos-goias/saida/eventos_goias.xlsx",
- "eventos_futuros": 385,
- "novos_hoje": 7,
+ "eventos_futuros": 387,
+ "novos_hoje": 9,
  "ok": true
 }
