@@ -1,9 +1,9 @@
 {
- "inicio": "2026-11-23T00:02:19.362910-03:00",
+ "inicio": "2026-11-23T19:12:16.505949-03:00",
  "fontes": {
   "Sympla": {
-   "eventos": 294,
-   "segundos": 174
+   "eventos": 311,
+   "segundos": 219
   },
   "Bilheteria Digital": {
    "eventos": 4,
@@ -18,18 +18,18 @@
    "segundos": 1
   },
   "OTicket": {
-   "eventos": 11,
-   "segundos": 22
+   "eventos": 10,
+   "segundos": 21
   },
   "Virtual Ticket": {
    "eventos": 0,
    "segundos": 0
   }
  },
- "fim": "2026-11-23T00:05:46.122506-03:00",
- "pedidos": 129,
+ "fim": "2026-11-23T19:16:27.951240-03:00",
+ "pedidos": 156,
  "planilha": "/home/runner/work/eventos-goias/eventos-goias/saida/eventos_goias.xlsx",
- "eventos_futuros": 313,
- "novos_hoje": 1,
+ "eventos_futuros": 336,
+ "novos_hoje": 24,
  "ok": true
 }
