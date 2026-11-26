@@ -1,13 +1,13 @@
 {
- "inicio": "2026-11-26T01:19:19.043116-03:00",
+ "inicio": "2026-11-26T16:46:56.341597-03:00",
  "fontes": {
   "Sympla": {
-   "eventos": 332,
+   "eventos": 344,
    "segundos": 220
   },
   "Bilheteria Digital": {
-   "eventos": 5,
-   "segundos": 12
+   "eventos": 4,
+   "segundos": 9
   },
   "Outgo": {
    "eventos": 2,
@@ -26,10 +26,10 @@
    "segundos": 1
   }
  },
- "fim": "2026-11-26T01:23:32.849740-03:00",
- "pedidos": 143,
+ "fim": "2026-11-26T16:51:07.918181-03:00",
+ "pedidos": 144,
  "planilha": "/home/runner/work/eventos-goias/eventos-goias/saida/eventos_goias.xlsx",
- "eventos_futuros": 357,
- "novos_hoje": 4,
+ "eventos_futuros": 369,
+ "novos_hoje": 16,
  "ok": true
 }
